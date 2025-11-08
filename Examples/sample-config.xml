@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+  <Database>
+    <ServerName>sql-server-01</ServerName>
+    <Port>1433</Port>
+    <DatabaseName>ProductionDB</DatabaseName>
+    <Username>dbadmin</Username>
+    <Password>SecureP@ssw0rd</Password>
+    <Timeout>30</Timeout>
+  </Database>
+  <Application>
+    <AppName>MyApplication</AppName>
+    <Version>1.0.0</Version>
+    <Environment>Production</Environment>
+    <LogLevel>Information</LogLevel>
+    <EnableDebug>false</EnableDebug>
+  </Application>
+  <Network>
+    <ProxyServer>proxy.company.com</ProxyServer>
+    <ProxyPort>8080</ProxyPort>
+    <UseSSL>true</UseSSL>
+  </Network>
+</Configuration>

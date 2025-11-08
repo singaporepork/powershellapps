@@ -1,0 +1,9 @@
+# Simple key-value answer file
+# Supports different delimiters: =, :, or space
+
+ServerName=web-server-01
+Port=80
+Environment:Production
+LogPath C:\Logs\application.log
+EnableLogging=true
+MaxConnections=100
