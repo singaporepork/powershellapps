@@ -204,6 +204,250 @@ Run the example script to see all features in action:
 .\Examples\Use-AnswerFileReader.ps1
 ```
 
+---
+
+### RestApiAuth
+
+A comprehensive module for authenticating with REST APIs using various authentication methods.
+
+#### Features
+
+- **Multiple Authentication Methods**: Basic, Bearer Token, API Key, OAuth 2.0 Client Credentials, Custom Headers
+- **Session Management**: Create reusable authenticated sessions for multiple API calls
+- **Automatic Token Refresh**: OAuth 2.0 tokens are automatically refreshed when expired
+- **Error Handling**: Comprehensive error handling with detailed error messages
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+- **Flexible Usage**: Use sessions or generate headers for one-off requests
+
+#### Supported Authentication Methods
+
+1. **Basic Authentication** - Username and password (base64 encoded)
+2. **Bearer Token** - JWT tokens, personal access tokens
+3. **API Key** - Custom header-based API keys
+4. **OAuth 2.0** - Client credentials flow with automatic token refresh
+5. **Custom Headers** - Any custom authentication header scheme
+6. **None** - For public APIs or when authentication is handled externally
+
+#### Functions
+
+##### New-RestApiSession
+
+Creates an authenticated session for making REST API requests.
+
+```powershell
+# Basic Authentication
+$cred = Get-Credential
+$session = New-RestApiSession -BaseUri "https://api.example.com" -AuthMethod Basic -Credential $cred
+
+# Bearer Token
+$session = New-RestApiSession -BaseUri "https://api.github.com" -AuthMethod Bearer -Token $token
+
+# API Key
+$session = New-RestApiSession -BaseUri "https://api.example.com" -AuthMethod ApiKey -Token $apiKey -ApiKeyHeader "X-API-Key"
+
+# OAuth 2.0
+$oauth = @{
+    ClientId = "client-id"
+    ClientSecret = "client-secret"
+    TokenEndpoint = "https://auth.example.com/oauth/token"
+    Scope = "api:read api:write"
+}
+$session = New-RestApiSession -BaseUri "https://api.example.com" -AuthMethod OAuth2 -OAuth2Config $oauth
+```
+
+##### Invoke-RestApiRequest
+
+Makes REST API requests using an authenticated session.
+
+```powershell
+# GET request
+$users = Invoke-RestApiRequest -Session $session -Endpoint "/users" -Method GET
+
+# POST request with body
+$body = @{ name = "John Doe"; email = "john@example.com" }
+$response = Invoke-RestApiRequest -Session $session -Endpoint "/users" -Method POST -Body $body
+
+# GET with query parameters
+$params = @{ page = 1; limit = 10 }
+$users = Invoke-RestApiRequest -Session $session -Endpoint "/users" -QueryParameters $params
+```
+
+##### Test-RestApiConnection
+
+Tests API connectivity and authentication.
+
+```powershell
+if (Test-RestApiConnection -Session $session) {
+    Write-Host "API connection successful"
+}
+```
+
+##### Update-RestApiSessionToken
+
+Updates the authentication token in an existing session.
+
+```powershell
+Update-RestApiSessionToken -Session $session -Token $newToken
+```
+
+##### New-RestApiHeaders
+
+Generates authentication headers for one-off requests.
+
+```powershell
+$headers = New-RestApiHeaders -AuthMethod Bearer -Token $token
+Invoke-RestMethod -Uri "https://api.example.com/users" -Headers $headers
+```
+
+#### Usage Examples
+
+##### Example 1: GitHub API with Bearer Token
+
+```powershell
+Import-Module ".\Modules\RestApiAuth.psm1"
+
+# Create session with personal access token
+$token = $env:GITHUB_TOKEN
+$session = New-RestApiSession -BaseUri "https://api.github.com" -AuthMethod Bearer -Token $token
+
+# Get authenticated user's repositories
+$repos = Invoke-RestApiRequest -Session $session -Endpoint "/user/repos" -Method GET
+
+# Display repositories
+$repos | ForEach-Object {
+    Write-Host "$($_.name) - $($_.description)"
+}
+```
+
+##### Example 2: Basic Authentication
+
+```powershell
+Import-Module ".\Modules\RestApiAuth.psm1"
+
+# Get credentials
+$cred = Get-Credential -Message "Enter API credentials"
+
+# Create session
+$session = New-RestApiSession -BaseUri "https://api.example.com" -AuthMethod Basic -Credential $cred
+
+# Test connection
+if (Test-RestApiConnection -Session $session -TestEndpoint "/health") {
+    Write-Host "Connected successfully"
+
+    # Make API call
+    $data = Invoke-RestApiRequest -Session $session -Endpoint "/data" -Method GET
+}
+```
+
+##### Example 3: API Key Authentication
+
+```powershell
+Import-Module ".\Modules\RestApiAuth.psm1"
+
+# Read API key from environment
+$apiKey = $env:OPENWEATHER_API_KEY
+
+# Create session (OpenWeather uses 'appid' in query params, we use None auth)
+$session = New-RestApiSession -BaseUri "https://api.openweathermap.org/data/2.5" -AuthMethod None
+
+# Get weather data (API key in query params)
+$params = @{
+    q = "London"
+    appid = $apiKey
+    units = "metric"
+}
+
+$weather = Invoke-RestApiRequest -Session $session -Endpoint "/weather" -QueryParameters $params
+
+Write-Host "Temperature in London: $($weather.main.temp)°C"
+```
+
+##### Example 4: OAuth 2.0 with Microsoft Graph
+
+```powershell
+Import-Module ".\Modules\RestApiAuth.psm1"
+
+# Configure OAuth2
+$oauth2Config = @{
+    ClientId = $env:AZURE_CLIENT_ID
+    ClientSecret = $env:AZURE_CLIENT_SECRET
+    TokenEndpoint = "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token"
+    Scope = "https://graph.microsoft.com/.default"
+}
+
+# Create session (automatically obtains token)
+$session = New-RestApiSession -BaseUri "https://graph.microsoft.com/v1.0" `
+                               -AuthMethod OAuth2 `
+                               -OAuth2Config $oauth2Config
+
+# Get users from Azure AD
+$params = @{ '$top' = 10 }
+$users = Invoke-RestApiRequest -Session $session -Endpoint "/users" -QueryParameters $params
+
+# Token is automatically refreshed when expired
+Start-Sleep -Seconds 3600
+$moreUsers = Invoke-RestApiRequest -Session $session -Endpoint "/users" -QueryParameters $params
+```
+
+##### Example 5: Custom Headers
+
+```powershell
+Import-Module ".\Modules\RestApiAuth.psm1"
+
+# Create session with custom headers
+$customHeaders = @{
+    'X-Custom-Auth' = 'custom-value'
+    'X-Request-ID' = [guid]::NewGuid().ToString()
+}
+
+$session = New-RestApiSession -BaseUri "https://api.example.com" `
+                               -AuthMethod Custom `
+                               -CustomHeaders $customHeaders
+
+# Make request
+$response = Invoke-RestApiRequest -Session $session -Endpoint "/data"
+```
+
+#### Installation
+
+1. Copy the `RestApiAuth.psm1` file to your PowerShell modules directory or project
+2. Import the module in your script:
+   ```powershell
+   Import-Module ".\Modules\RestApiAuth.psm1"
+   ```
+
+#### Testing
+
+Run the example scripts to see different authentication methods:
+
+```powershell
+.\Examples\Use-RestApiAuth-Basic.ps1
+.\Examples\Use-RestApiAuth-Bearer.ps1
+.\Examples\Use-RestApiAuth-ApiKey.ps1
+.\Examples\Use-RestApiAuth-OAuth2.ps1
+```
+
+#### Common Use Cases
+
+**Integrating with popular APIs:**
+
+- **GitHub**: Bearer token authentication
+- **Microsoft Graph**: OAuth 2.0 client credentials
+- **OpenWeather**: API key in query parameters
+- **Stripe**: API key in Authorization header
+- **Auth0**: OAuth 2.0 client credentials
+- **Okta**: OAuth 2.0 client credentials
+
+**Security Best Practices:**
+
+1. Store credentials in environment variables or secure vaults
+2. Never hardcode passwords or secrets in scripts
+3. Use `Get-Credential` for interactive credential input
+4. Rotate tokens and API keys regularly
+5. Use OAuth 2.0 when available for better security
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository

@@ -1,0 +1,26 @@
+{
+  "ApiBaseUri": "https://api.openweathermap.org/data/2.5",
+  "AuthMethod": "ApiKey",
+  "ApiKeyHeader": "appid",
+  "TokenEnvVar": "OPENWEATHER_API_KEY",
+  "Note": "Store API key in environment variable",
+  "Examples": {
+    "GetWeather": {
+      "Endpoint": "/weather",
+      "Method": "GET",
+      "QueryParams": {
+        "q": "London",
+        "units": "metric"
+      }
+    },
+    "GetForecast": {
+      "Endpoint": "/forecast",
+      "Method": "GET",
+      "QueryParams": {
+        "lat": "51.5074",
+        "lon": "-0.1278",
+        "cnt": 5
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "ApiBaseUri": "https://graph.microsoft.com/v1.0",
+  "AuthMethod": "OAuth2",
+  "OAuth2": {
+    "ClientId": "your-azure-app-client-id",
+    "ClientSecretEnvVar": "AZURE_CLIENT_SECRET",
+    "TokenEndpoint": "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token",
+    "Scope": "https://graph.microsoft.com/.default"
+  },
+  "Note": "Replace {tenant-id} with your Azure AD tenant ID",
+  "Examples": {
+    "GetUsers": {
+      "Endpoint": "/users",
+      "Method": "GET",
+      "QueryParams": {
+        "$top": 10,
+        "$select": "displayName,userPrincipalName,mail"
+      }
+    },
+    "GetMe": {
+      "Endpoint": "/me",
+      "Method": "GET"
+    }
+  },
+  "OtherProviders": {
+    "Auth0": {
+      "TokenEndpoint": "https://your-domain.auth0.com/oauth/token",
+      "Scope": "read:users write:users"
+    },
+    "Okta": {
+      "TokenEndpoint": "https://your-domain.okta.com/oauth2/default/v1/token",
+      "Scope": "custom_scope"
+    },
+    "Google": {
+      "TokenEndpoint": "https://oauth2.googleapis.com/token",
+      "Scope": "https://www.googleapis.com/auth/userinfo.email"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "ApiBaseUri": "https://api.example.com/v1",
+  "AuthMethod": "Basic",
+  "Username": "api-user",
+  "Note": "Password should be stored securely, use Get-Credential in scripts"
+}

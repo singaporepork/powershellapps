@@ -1,0 +1,6 @@
+{
+  "ApiBaseUri": "https://api.github.com",
+  "AuthMethod": "Bearer",
+  "TokenEnvVar": "GITHUB_TOKEN",
+  "Note": "Store bearer token in environment variable or secure vault"
+}
