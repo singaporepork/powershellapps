@@ -448,6 +448,345 @@ Run the example scripts to see different authentication methods:
 
 ---
 
+### PdfTextReader
+
+A comprehensive module for extracting text from PDF files using PowerShell.
+
+#### Features
+
+- **Text Extraction**: Extract text from entire PDFs, specific pages, or page ranges
+- **PDF Information**: Retrieve metadata including page count, author, title, creation date
+- **Text Search**: Search for text patterns using literal or regex matching
+- **Batch Processing**: Process multiple PDFs with built-in batch functions
+- **Export Functionality**: Save extracted text to files with various encodings
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+- **iTextSharp Integration**: Uses proven PDF library for reliable text extraction
+
+#### Requirements
+
+**Dependency**: iTextSharp library (itextsharp.dll) - See setup guide below
+
+#### Functions
+
+##### Read-PdfText
+
+Extracts text from a PDF file.
+
+```powershell
+# Read all pages
+$text = Read-PdfText -FilePath "C:\document.pdf"
+
+# Read specific pages
+$text = Read-PdfText -FilePath "C:\document.pdf" -Pages 1,3,5
+
+# Read page range
+$text = Read-PdfText -FilePath "C:\document.pdf" -StartPage 2 -EndPage 5
+
+# Custom page separator
+$text = Read-PdfText -FilePath "C:\document.pdf" -Separator "`n---PAGE---`n"
+```
+
+##### Get-PdfInfo
+
+Retrieves PDF metadata and information.
+
+```powershell
+$info = Get-PdfInfo -FilePath "C:\document.pdf"
+
+Write-Host "Pages: $($info.PageCount)"
+Write-Host "Author: $($info.Author)"
+Write-Host "Title: $($info.Title)"
+Write-Host "File Size: $($info.FileSize) bytes"
+```
+
+##### Test-PdfFile
+
+Validates if a file is a readable PDF.
+
+```powershell
+if (Test-PdfFile -FilePath "C:\document.pdf") {
+    Write-Host "Valid PDF file"
+}
+```
+
+##### Export-PdfToText
+
+Exports PDF text to a file.
+
+```powershell
+# Export entire PDF
+Export-PdfToText -PdfPath "C:\document.pdf" -OutputPath "C:\output.txt"
+
+# Export specific pages
+Export-PdfToText -PdfPath "C:\document.pdf" -OutputPath "C:\pages.txt" -Pages 1,2,3
+
+# Specify encoding
+Export-PdfToText -PdfPath "C:\document.pdf" -OutputPath "C:\output.txt" -Encoding UTF8
+```
+
+##### Search-PdfText
+
+Searches for text patterns in PDFs.
+
+```powershell
+# Simple text search
+$results = Search-PdfText -FilePath "C:\document.pdf" -Pattern "invoice"
+
+# Regex search for phone numbers
+$results = Search-PdfText -FilePath "C:\document.pdf" -Pattern "\d{3}-\d{3}-\d{4}" -UseRegex
+
+# Case-sensitive search
+$results = Search-PdfText -FilePath "C:\document.pdf" -Pattern "CompanyName" -CaseSensitive
+
+# Display results
+$results | ForEach-Object {
+    Write-Host "Page $($_.Page): $($_.Match)"
+}
+```
+
+##### Install-PdfReaderLibrary
+
+Provides instructions for installing the iTextSharp dependency.
+
+```powershell
+Install-PdfReaderLibrary
+```
+
+#### Setup Instructions
+
+**Step 1: Install iTextSharp**
+
+Download iTextSharp 5.5.13.3 from one of these sources:
+- GitHub: https://github.com/itext/itextsharp/releases/tag/5.5.13.3
+- NuGet: https://www.nuget.org/packages/iTextSharp/5.5.13.3
+
+**Step 2: Extract the DLL**
+
+Extract `itextsharp.dll` from the download.
+
+**Step 3: Place the DLL**
+
+Put `itextsharp.dll` in one of these locations:
+- `Modules/lib/itextsharp.dll` (recommended)
+- `C:\Program Files\iTextSharp\itextsharp.dll`
+- `%USERPROFILE%\Documents\PowerShell\Modules\iTextSharp\itextsharp.dll`
+
+**Step 4: Unblock the DLL** (if downloaded from web)
+
+```powershell
+Unblock-File -Path ".\Modules\lib\itextsharp.dll"
+```
+
+**Step 5: Verify Installation**
+
+```powershell
+Import-Module .\Modules\PdfTextReader.psm1
+Test-PdfFile -FilePath "C:\path\to\sample.pdf"
+```
+
+For detailed setup instructions, see `Modules/PDF_SETUP.md`
+
+#### Usage Examples
+
+##### Example 1: Extract Text from PDF
+
+```powershell
+Import-Module ".\Modules\PdfTextReader.psm1"
+
+# Read entire PDF
+$text = Read-PdfText -FilePath "C:\Reports\monthly-report.pdf"
+
+# Display first 500 characters
+Write-Host $text.Substring(0, 500)
+```
+
+##### Example 2: Get PDF Information
+
+```powershell
+Import-Module ".\Modules\PdfTextReader.psm1"
+
+# Get all PDF files in a folder
+Get-ChildItem "C:\Documents" -Filter "*.pdf" | ForEach-Object {
+    $info = Get-PdfInfo -FilePath $_.FullName
+
+    [PSCustomObject]@{
+        FileName = $_.Name
+        Pages = $info.PageCount
+        Author = $info.Author
+        SizeKB = [Math]::Round($_.Length / 1KB, 2)
+    }
+} | Format-Table
+```
+
+##### Example 3: Extract Invoice Data
+
+```powershell
+Import-Module ".\Modules\PdfTextReader.psm1"
+
+function Get-InvoiceData {
+    param([string]$PdfPath)
+
+    # Search for invoice number
+    $invoiceNum = Search-PdfText -FilePath $PdfPath -Pattern "INV-\d{5}" -UseRegex
+
+    # Search for amounts
+    $amounts = Search-PdfText -FilePath $PdfPath -Pattern "\$\d+\.\d{2}" -UseRegex
+
+    # Search for date (MM/DD/YYYY)
+    $dates = Search-PdfText -FilePath $PdfPath -Pattern "\d{2}/\d{2}/\d{4}" -UseRegex
+
+    return @{
+        InvoiceNumber = if ($invoiceNum) { $invoiceNum[0].Match } else { "Not Found" }
+        Amount = if ($amounts) { $amounts[0].Match } else { "Not Found" }
+        Date = if ($dates) { $dates[0].Match } else { "Not Found" }
+    }
+}
+
+$invoiceData = Get-InvoiceData -PdfPath "C:\Invoices\invoice.pdf"
+$invoiceData | Format-List
+```
+
+##### Example 4: Batch Convert PDFs to Text
+
+```powershell
+Import-Module ".\Modules\PdfTextReader.psm1"
+
+$sourceFolder = "C:\PDFs"
+$outputFolder = "C:\TextFiles"
+
+# Create output folder
+New-Item -ItemType Directory -Path $outputFolder -Force | Out-Null
+
+# Process all PDFs
+Get-ChildItem -Path $sourceFolder -Filter "*.pdf" | ForEach-Object {
+    $outputFile = Join-Path $outputFolder ($_.BaseName + ".txt")
+
+    Write-Host "Converting: $($_.Name)..."
+    Export-PdfToText -PdfPath $_.FullName -OutputPath $outputFile
+}
+
+Write-Host "Conversion complete!"
+```
+
+##### Example 5: Search Multiple PDFs
+
+```powershell
+Import-Module ".\Modules\PdfTextReader.psm1"
+
+function Search-PdfFolder {
+    param(
+        [string]$FolderPath,
+        [string]$Pattern
+    )
+
+    $results = @()
+
+    Get-ChildItem -Path $FolderPath -Filter "*.pdf" -Recurse | ForEach-Object {
+        $matches = Search-PdfText -FilePath $_.FullName -Pattern $Pattern
+
+        foreach ($match in $matches) {
+            $results += [PSCustomObject]@{
+                File = $_.Name
+                Page = $match.Page
+                Match = $match.Match
+                Path = $_.FullName
+            }
+        }
+    }
+
+    return $results
+}
+
+# Search for all email addresses
+$emails = Search-PdfFolder -FolderPath "C:\Documents" -Pattern "\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+$emails | Format-Table -AutoSize
+```
+
+##### Example 6: PDF Inventory Report
+
+```powershell
+Import-Module ".\Modules\PdfTextReader.psm1"
+
+$pdfFolder = "C:\Company\Documents"
+$reportPath = "C:\Reports\pdf-inventory.csv"
+
+Get-ChildItem -Path $pdfFolder -Filter "*.pdf" -Recurse | ForEach-Object {
+    $info = Get-PdfInfo -FilePath $_.FullName
+
+    [PSCustomObject]@{
+        FileName = $_.Name
+        Folder = $_.Directory.Name
+        FullPath = $_.FullName
+        PageCount = $info.PageCount
+        Title = $info.Title
+        Author = $info.Author
+        Created = $info.CreationDate
+        FileSizeMB = [Math]::Round($_.Length / 1MB, 2)
+        IsEncrypted = $info.IsEncrypted
+    }
+} | Export-Csv -Path $reportPath -NoTypeInformation
+
+Write-Host "Inventory saved to: $reportPath"
+```
+
+#### Installation
+
+1. Copy the `PdfTextReader.psm1` file to your PowerShell modules directory or project
+2. Install iTextSharp library (see Setup Instructions above)
+3. Import the module in your script:
+   ```powershell
+   Import-Module ".\Modules\PdfTextReader.psm1"
+   ```
+
+#### Testing
+
+Run the example scripts:
+
+```powershell
+.\Examples\Use-PdfTextReader.ps1
+.\Examples\Use-PdfTextReader-Batch.ps1
+```
+
+#### Common Use Cases
+
+- **Invoice Processing**: Extract invoice numbers, amounts, and dates
+- **Report Analysis**: Convert PDF reports to text for data analysis
+- **Contract Review**: Search for specific terms and clauses
+- **Archive Management**: Create searchable text indexes
+- **Form Processing**: Extract data from PDF forms
+- **Compliance**: Search documents for required information
+- **Data Migration**: Convert legacy PDF documents to text
+
+#### Troubleshooting
+
+**"Could not load file or assembly 'itextsharp'"**
+- The DLL is not in a recognized location
+- Run `Install-PdfReaderLibrary` to see where to place it
+
+**"This method can be called only from a trusted context"**
+- The DLL is blocked. Run: `Unblock-File -Path "path\to\itextsharp.dll"`
+
+**"PDF appears to be corrupted"**
+- The PDF may be damaged or password-protected
+- Try opening in Adobe Reader first
+
+**No text extracted**
+- PDF may contain scanned images instead of text
+- Consider using OCR tools for image-based PDFs
+
+#### Limitations
+
+- **Image-based PDFs**: Cannot extract text from scanned documents (requires OCR)
+- **Password-protected PDFs**: Cannot read encrypted/protected PDFs
+- **Complex Layouts**: Text extraction follows PDF's internal structure, which may differ from visual layout
+- **Special Fonts**: Some custom fonts may not extract correctly
+
+#### License Note
+
+iTextSharp 5.5.13.3 is licensed under AGPL/LGPL. Ensure your usage complies with the license terms. Commercial licenses are available from iText.
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
