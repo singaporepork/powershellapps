@@ -2,43 +2,56 @@
 
 ## Overview
 
-The PdfTextReader module allows you to extract text from PDF files in PowerShell 5+. It uses the iTextSharp library for PDF processing.
+The PdfTextReader module allows you to extract text from PDF files in PowerShell 5+. It uses the **iText 7** library, which is the modern, actively maintained version of the PDF processing library.
+
+## Why iText 7?
+
+**iText 7** replaced the end-of-life iTextSharp 5.x library with:
+- **Active Maintenance**: Regular updates and bug fixes
+- **Modern API**: Cleaner, more intuitive interface
+- **Better Performance**: Optimized for current .NET versions
+- **Enhanced Features**: More capabilities for PDF processing
+- **Long-term Support**: Continued development and support
 
 ## Prerequisites
 
 - PowerShell 5.0 or later
-- iTextSharp library (itextsharp.dll)
+- iText 7 library DLLs (itext.kernel.dll and itext.io.dll)
 
 ## Installation
 
-### Option 1: Download iTextSharp Manually
+### Option 1: Download from NuGet (Recommended)
 
-1. **Download iTextSharp 5.5.13.3** (LGPL/MPL version)
-   - GitHub Release: https://github.com/itext/itextsharp/releases/tag/5.5.13.3
-   - NuGet Package: https://www.nuget.org/packages/iTextSharp/5.5.13.3
+1. **Visit NuGet**
+   - Go to: https://www.nuget.org/packages/itext7/
 
-2. **Extract the DLL**
-   - If downloading from GitHub: Extract the ZIP and find `itextsharp.dll` in the `lib` folder
-   - If using NuGet: Extract the .nupkg (it's a ZIP file) and find the DLL in `lib/net40/`
+2. **Download the Package**
+   - Click "Download package" on the right side
+   - This downloads a `.nupkg` file
 
-3. **Place the DLL** in one of these locations:
-   ```
-   Modules/lib/itextsharp.dll
-   C:\Program Files\iTextSharp\itextsharp.dll
-   %USERPROFILE%\Documents\PowerShell\Modules\iTextSharp\itextsharp.dll
-   ```
+3. **Extract the Package**
+   - Rename the `.nupkg` file to `.zip`
+   - Extract the ZIP file
+   - Navigate to `lib\netstandard2.0\` folder inside
 
-### Option 2: Using NuGet (if NuGet.exe is available)
+4. **Copy the DLLs**
+   - Copy `itext.kernel.dll` and `itext.io.dll`
+   - Place them in: `Modules/lib/`
+
+### Option 2: Using NuGet CLI
+
+If you have NuGet CLI installed:
 
 ```powershell
-# Download NuGet package
-nuget install iTextSharp -Version 5.5.13.3 -OutputDirectory C:\Temp\iTextSharp
+# Install to a temporary directory
+nuget install itext7 -OutputDirectory C:\Temp\iText7
 
-# Copy DLL to module directory
-$sourceDll = "C:\Temp\iTextSharp\iTextSharp.5.5.13.3\lib\itextsharp.dll"
+# Copy DLLs to module directory
+$sourcePath = "C:\Temp\iText7\itext7.8.x.x\lib\netstandard2.0"
 $destPath = ".\Modules\lib"
 New-Item -ItemType Directory -Path $destPath -Force
-Copy-Item $sourceDll $destPath
+Copy-Item "$sourcePath\itext.kernel.dll" $destPath
+Copy-Item "$sourcePath\itext.io.dll" $destPath
 ```
 
 ### Option 3: Using the Install Helper
@@ -47,8 +60,6 @@ Copy-Item $sourceDll $destPath
 Import-Module .\Modules\PdfTextReader.psm1
 Install-PdfReaderLibrary
 ```
-
-This will show you instructions and the exact paths where you should place the DLL.
 
 ## Verifying Installation
 
@@ -59,93 +70,40 @@ Import-Module .\Modules\PdfTextReader.psm1
 Test-PdfFile -FilePath "C:\path\to\sample.pdf"
 ```
 
-If the module loads successfully, you should not see any errors about missing iTextSharp.
-
-## Directory Structure
-
-After installation, your directory should look like:
-
-```
-powershellapps/
-├── Modules/
-│   ├── PdfTextReader.psm1
-│   └── lib/
-│       └── itextsharp.dll  ← Place the DLL here
-├── Examples/
-│   ├── Use-PdfTextReader.ps1
-│   └── Use-PdfTextReader-Batch.ps1
-└── README.md
-```
-
 ## Licensing
 
-iTextSharp 5.5.13.3 is available under the AGPL/LGPL license. Make sure your usage complies with the license terms:
+**iText 7** is licensed under **AGPL v3**.
 
-- **AGPL**: Free for open-source projects
-- **Commercial License**: Required for closed-source commercial applications
-
-For more information: https://itextpdf.com/how-buy
-
-## Alternative: iText 7
-
-If you need a more modern version, consider iText 7:
-- More features and better performance
-- Requires .NET Framework 4.5+ or .NET Core
-- Different API (module would need updates)
+- **Open Source Projects**: Free to use under AGPL v3 terms
+- **Closed-Source/Commercial**: Requires a commercial license
+- More info: https://itextpdf.com/how-buy
 
 ## Troubleshooting
 
-### Error: "Could not load file or assembly 'itextsharp'"
-
-**Solution**: The DLL is not in a recognized location. Use `Install-PdfReaderLibrary` to see where to place it.
-
-### Error: "This method can be called only from a trusted context"
-
-**Solution**: The DLL may be blocked. Unblock it:
-```powershell
-Unblock-File -Path ".\Modules\lib\itextsharp.dll"
-```
-
-### Error: "PDF appears to be corrupted"
-
-**Solution**: The PDF file may be damaged or password-protected. Try opening it in Adobe Reader first.
-
-### PowerShell 7 Compatibility
-
-While this module targets PowerShell 5, it should also work in PowerShell 7. However, you may need to use a different version of iTextSharp or iText 7 for optimal compatibility.
-
-## Getting Help
+### DLLs Blocked
 
 ```powershell
-# Get help for module functions
-Get-Help Read-PdfText -Full
-Get-Help Get-PdfInfo -Full
-Get-Help Search-PdfText -Full
-Get-Help Export-PdfToText -Full
+Unblock-File -Path ".\Modules\lib\itext.kernel.dll"
+Unblock-File -Path ".\Modules\lib\itext.io.dll"
 ```
+
+### Missing DLLs
+
+Ensure both required DLLs are present:
+- itext.kernel.dll
+- itext.io.dll
 
 ## Quick Start
 
 ```powershell
-# Import module
 Import-Module .\Modules\PdfTextReader.psm1
 
-# Read entire PDF
-$text = Read-PdfText -FilePath "C:\Documents\sample.pdf"
+# Read PDF
+$text = Read-PdfText -FilePath "document.pdf"
 
-# Get PDF information
-$info = Get-PdfInfo -FilePath "C:\Documents\sample.pdf"
-Write-Host "Pages: $($info.PageCount)"
+# Get info
+$info = Get-PdfInfo -FilePath "document.pdf"
 
-# Export to text file
-Export-PdfToText -PdfPath "C:\Documents\sample.pdf" -OutputPath "C:\output.txt"
-
-# Search for text
-$results = Search-PdfText -FilePath "C:\Documents\sample.pdf" -Pattern "invoice"
+# Search
+$results = Search-PdfText -FilePath "document.pdf" -Pattern "invoice"
 ```
-
-## Next Steps
-
-- Review the examples in the `Examples` folder
-- Check the README.md for full documentation
-- Test with your own PDF files

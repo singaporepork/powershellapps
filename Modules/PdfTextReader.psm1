@@ -3,20 +3,20 @@
     Modular PDF text reader for PowerShell 5+
 
 .DESCRIPTION
-    This module provides functions to extract text from PDF files using iTextSharp.
+    This module provides functions to extract text from PDF files using iText 7.
     Supports reading entire documents, specific pages, or page ranges.
 
 .NOTES
-    Version: 1.0.0
+    Version: 2.0.0
     Author: PowerShell Apps
     Compatible with: PowerShell 5.0+
-    Dependencies: iTextSharp library (automatically downloaded if needed)
+    Dependencies: iText 7 library (itext7 NuGet package)
 #>
 
 #region Module Variables
 
-$script:iTextSharpLoaded = $false
-$script:iTextSharpPath = $null
+$script:iTextLoaded = $false
+$script:iTextPath = $null
 
 #endregion
 
@@ -27,7 +27,7 @@ $script:iTextSharpPath = $null
     Reads text content from a PDF file.
 
 .DESCRIPTION
-    Extracts text from a PDF file. Can extract from the entire document,
+    Extracts text from a PDF file using iText 7. Can extract from the entire document,
     specific pages, or a range of pages.
 
 .PARAMETER FilePath
@@ -89,9 +89,9 @@ function Read-PdfText {
     )
 
     try {
-        # Ensure iTextSharp is loaded
+        # Ensure iText is loaded
         if (-not (Initialize-PdfReader)) {
-            throw "Failed to initialize PDF reader library"
+            throw "Failed to initialize PDF reader library. Please run Install-PdfReaderLibrary for setup instructions."
         }
 
         # Resolve full path
@@ -104,9 +104,10 @@ function Read-PdfText {
 
         Write-Verbose "Reading PDF file: $FilePath"
 
-        # Create PDF reader
-        $pdfReader = New-Object iTextSharp.text.pdf.PdfReader($FilePath)
-        $totalPages = $pdfReader.NumberOfPages
+        # Create PDF reader and document
+        $pdfReader = New-Object iText.Kernel.Pdf.PdfReader($FilePath)
+        $pdfDocument = New-Object iText.Kernel.Pdf.PdfDocument($pdfReader)
+        $totalPages = $pdfDocument.GetNumberOfPages()
 
         Write-Verbose "PDF has $totalPages pages"
 
@@ -137,11 +138,12 @@ function Read-PdfText {
 
         # Extract text from pages
         $extractedText = @()
-        $strategy = New-Object iTextSharp.text.pdf.parser.SimpleTextExtractionStrategy
 
         foreach ($pageNum in $pagesToExtract) {
             try {
-                $pageText = [iTextSharp.text.pdf.parser.PdfTextExtractor]::GetTextFromPage($pdfReader, $pageNum, $strategy)
+                $page = $pdfDocument.GetPage($pageNum)
+                $strategy = New-Object iText.Kernel.Pdf.Canvas.Parser.Listener.LocationTextExtractionStrategy
+                $pageText = [iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor]::GetTextFromPage($page, $strategy)
                 $extractedText += $pageText
                 Write-Verbose "Extracted text from page $pageNum"
             }
@@ -150,7 +152,8 @@ function Read-PdfText {
             }
         }
 
-        # Close the PDF reader
+        # Close the document and reader
+        $pdfDocument.Close()
         $pdfReader.Close()
 
         # Join text with separator
@@ -192,7 +195,7 @@ function Get-PdfInfo {
     )
 
     try {
-        # Ensure iTextSharp is loaded
+        # Ensure iText is loaded
         if (-not (Initialize-PdfReader)) {
             throw "Failed to initialize PDF reader library"
         }
@@ -202,28 +205,30 @@ function Get-PdfInfo {
 
         Write-Verbose "Getting PDF info for: $FilePath"
 
-        # Create PDF reader
-        $pdfReader = New-Object iTextSharp.text.pdf.PdfReader($FilePath)
+        # Create PDF reader and document
+        $pdfReader = New-Object iText.Kernel.Pdf.PdfReader($FilePath)
+        $pdfDocument = New-Object iText.Kernel.Pdf.PdfDocument($pdfReader)
 
-        # Get metadata
+        # Get document info
+        $docInfo = $pdfDocument.GetDocumentInfo()
+
+        # Create info object
         $info = @{
             FilePath = $FilePath
             FileName = [System.IO.Path]::GetFileName($FilePath)
-            PageCount = $pdfReader.NumberOfPages
-            Title = $pdfReader.Info["Title"]
-            Author = $pdfReader.Info["Author"]
-            Subject = $pdfReader.Info["Subject"]
-            Keywords = $pdfReader.Info["Keywords"]
-            Creator = $pdfReader.Info["Creator"]
-            Producer = $pdfReader.Info["Producer"]
-            CreationDate = $pdfReader.Info["CreationDate"]
-            ModificationDate = $pdfReader.Info["ModDate"]
-            PdfVersion = $pdfReader.PdfVersion
-            IsEncrypted = $pdfReader.IsEncrypted()
+            PageCount = $pdfDocument.GetNumberOfPages()
+            Title = $docInfo.GetTitle()
+            Author = $docInfo.GetAuthor()
+            Subject = $docInfo.GetSubject()
+            Keywords = $docInfo.GetKeywords()
+            Creator = $docInfo.GetCreator()
+            Producer = $docInfo.GetProducer()
+            PdfVersion = $pdfDocument.GetPdfVersion().ToString()
             FileSize = (Get-Item $FilePath).Length
         }
 
-        # Close the PDF reader
+        # Close the document and reader
+        $pdfDocument.Close()
         $pdfReader.Close()
 
         # Create custom object
@@ -264,14 +269,16 @@ function Test-PdfFile {
             return $false
         }
 
-        # Ensure iTextSharp is loaded
+        # Ensure iText is loaded
         if (-not (Initialize-PdfReader)) {
             return $false
         }
 
         # Try to open the PDF
-        $pdfReader = New-Object iTextSharp.text.pdf.PdfReader($FilePath)
-        $isValid = ($pdfReader.NumberOfPages -gt 0)
+        $pdfReader = New-Object iText.Kernel.Pdf.PdfReader($FilePath)
+        $pdfDocument = New-Object iText.Kernel.Pdf.PdfDocument($pdfReader)
+        $isValid = ($pdfDocument.GetNumberOfPages() -gt 0)
+        $pdfDocument.Close()
         $pdfReader.Close()
 
         return $isValid
@@ -396,7 +403,7 @@ function Search-PdfText {
     )
 
     try {
-        # Ensure iTextSharp is loaded
+        # Ensure iText is loaded
         if (-not (Initialize-PdfReader)) {
             throw "Failed to initialize PDF reader library"
         }
@@ -405,16 +412,18 @@ function Search-PdfText {
 
         Write-Verbose "Searching PDF for pattern: $Pattern"
 
-        # Create PDF reader
-        $pdfReader = New-Object iTextSharp.text.pdf.PdfReader($FilePath)
-        $totalPages = $pdfReader.NumberOfPages
+        # Create PDF reader and document
+        $pdfReader = New-Object iText.Kernel.Pdf.PdfReader($FilePath)
+        $pdfDocument = New-Object iText.Kernel.Pdf.PdfDocument($pdfReader)
+        $totalPages = $pdfDocument.GetNumberOfPages()
 
         $results = @()
-        $strategy = New-Object iTextSharp.text.pdf.parser.SimpleTextExtractionStrategy
 
         # Search each page
         for ($pageNum = 1; $pageNum -le $totalPages; $pageNum++) {
-            $pageText = [iTextSharp.text.pdf.parser.PdfTextExtractor]::GetTextFromPage($pdfReader, $pageNum, $strategy)
+            $page = $pdfDocument.GetPage($pageNum)
+            $strategy = New-Object iText.Kernel.Pdf.Canvas.Parser.Listener.LocationTextExtractionStrategy
+            $pageText = [iText.Kernel.Pdf.Canvas.Parser.PdfTextExtractor]::GetTextFromPage($page, $strategy)
 
             # Perform search
             $matches = $null
@@ -443,6 +452,7 @@ function Search-PdfText {
             }
         }
 
+        $pdfDocument.Close()
         $pdfReader.Close()
 
         Write-Verbose "Found $($results.Count) match(es)"
@@ -460,50 +470,75 @@ function Search-PdfText {
 
 <#
 .SYNOPSIS
-    Initializes the PDF reader library (iTextSharp).
+    Initializes the PDF reader library (iText 7).
 #>
 function Initialize-PdfReader {
     [CmdletBinding()]
     param()
 
-    if ($script:iTextSharpLoaded) {
+    if ($script:iTextLoaded) {
         return $true
     }
 
     try {
-        # Try to find iTextSharp in common locations
+        # Try to find iText 7 DLLs in common locations
         $possiblePaths = @(
-            (Join-Path $PSScriptRoot "lib\itextsharp.dll"),
-            (Join-Path $PSScriptRoot "..\lib\itextsharp.dll"),
-            "C:\Program Files\iTextSharp\itextsharp.dll",
-            "$env:USERPROFILE\Documents\PowerShell\Modules\iTextSharp\itextsharp.dll"
+            (Join-Path $PSScriptRoot "lib"),
+            (Join-Path $PSScriptRoot "..\lib"),
+            "$env:USERPROFILE\Documents\PowerShell\Modules\iText7"
         )
 
         $foundPath = $null
-        foreach ($path in $possiblePaths) {
-            if (Test-Path $path) {
-                $foundPath = $path
-                break
+        foreach ($basePath in $possiblePaths) {
+            if (Test-Path $basePath) {
+                # Check for required DLLs
+                $kernelDll = Join-Path $basePath "itext.kernel.dll"
+                $ioDll = Join-Path $basePath "itext.io.dll"
+
+                if ((Test-Path $kernelDll) -and (Test-Path $ioDll)) {
+                    $foundPath = $basePath
+                    break
+                }
             }
         }
 
         if ($foundPath) {
-            Write-Verbose "Loading iTextSharp from: $foundPath"
-            Add-Type -Path $foundPath
-            $script:iTextSharpPath = $foundPath
-            $script:iTextSharpLoaded = $true
+            Write-Verbose "Loading iText 7 from: $foundPath"
+
+            # Load required assemblies in order
+            $requiredDlls = @(
+                "itext.io.dll",
+                "itext.kernel.dll"
+            )
+
+            foreach ($dll in $requiredDlls) {
+                $dllPath = Join-Path $foundPath $dll
+                if (Test-Path $dllPath) {
+                    Add-Type -Path $dllPath
+                    Write-Verbose "Loaded: $dll"
+                }
+                else {
+                    Write-Warning "Missing required DLL: $dll"
+                    return $false
+                }
+            }
+
+            $script:iTextPath = $foundPath
+            $script:iTextLoaded = $true
             return $true
         }
 
         # If not found, provide instructions
-        Write-Warning "iTextSharp library not found."
-        Write-Warning "Please download iTextSharp and place itextsharp.dll in one of these locations:"
+        Write-Warning "iText 7 library not found."
+        Write-Warning "Please download iText 7 and place the DLLs in one of these locations:"
         foreach ($path in $possiblePaths) {
             Write-Warning "  - $path"
         }
         Write-Warning ""
-        Write-Warning "Download from: https://github.com/itext/itextsharp/releases"
-        Write-Warning "Or use: Install-PdfReaderLibrary"
+        Write-Warning "Required DLLs: itext.kernel.dll, itext.io.dll"
+        Write-Warning "Download from: https://github.com/itext/itext-dotnet"
+        Write-Warning "Or use NuGet: Install-Package itext7"
+        Write-Warning "Or run: Install-PdfReaderLibrary"
 
         return $false
     }
@@ -515,7 +550,7 @@ function Initialize-PdfReader {
 
 <#
 .SYNOPSIS
-    Downloads and installs the iTextSharp library.
+    Downloads and installs the iText 7 library.
 #>
 function Install-PdfReaderLibrary {
     [CmdletBinding()]
@@ -534,27 +569,45 @@ function Install-PdfReaderLibrary {
             New-Item -ItemType Directory -Path $DestinationPath -Force | Out-Null
         }
 
-        $dllPath = Join-Path $DestinationPath "itextsharp.dll"
-
-        if (Test-Path $dllPath) {
-            Write-Host "iTextSharp is already installed at: $dllPath" -ForegroundColor Green
-            return $true
-        }
-
-        Write-Host "Downloading iTextSharp library..." -ForegroundColor Yellow
-        Write-Host "Note: You need to manually download iTextSharp 5.5.13.3 (LGPL version)" -ForegroundColor Yellow
+        Write-Host "iText 7 Installation Instructions" -ForegroundColor Cyan
+        Write-Host "=================================" -ForegroundColor Cyan
         Write-Host ""
-        Write-Host "Steps to install:" -ForegroundColor Cyan
-        Write-Host "1. Download from: https://github.com/itext/itextsharp/releases/tag/5.5.13.3" -ForegroundColor Gray
-        Write-Host "2. Extract the ZIP file" -ForegroundColor Gray
-        Write-Host "3. Copy itextsharp.dll to: $DestinationPath" -ForegroundColor Gray
+        Write-Host "iText 7 is the modern, actively maintained version of the PDF library." -ForegroundColor Yellow
         Write-Host ""
-        Write-Host "Or install via NuGet Package Manager if available" -ForegroundColor Gray
+        Write-Host "Required Files:" -ForegroundColor Cyan
+        Write-Host "  - itext.kernel.dll" -ForegroundColor White
+        Write-Host "  - itext.io.dll" -ForegroundColor White
+        Write-Host ""
+        Write-Host "Installation Options:" -ForegroundColor Cyan
+        Write-Host ""
+        Write-Host "Option 1: Download from NuGet (Recommended)" -ForegroundColor Green
+        Write-Host "  1. Go to: https://www.nuget.org/packages/itext7/" -ForegroundColor Gray
+        Write-Host "  2. Download the package (.nupkg file)" -ForegroundColor Gray
+        Write-Host "  3. Rename .nupkg to .zip and extract" -ForegroundColor Gray
+        Write-Host "  4. Copy DLLs from lib\netstandard2.0\ to: $DestinationPath" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Option 2: Use NuGet CLI (if available)" -ForegroundColor Green
+        Write-Host "  nuget install itext7 -OutputDirectory $DestinationPath" -ForegroundColor Gray
+        Write-Host "  Then copy DLLs from the lib\netstandard2.0\ folder" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "Option 3: Download from GitHub" -ForegroundColor Green
+        Write-Host "  1. Go to: https://github.com/itext/itext-dotnet/releases" -ForegroundColor Gray
+        Write-Host "  2. Download the latest release" -ForegroundColor Gray
+        Write-Host "  3. Extract and find the DLLs" -ForegroundColor Gray
+        Write-Host "  4. Copy to: $DestinationPath" -ForegroundColor Gray
+        Write-Host ""
+        Write-Host "IMPORTANT - License Information:" -ForegroundColor Yellow
+        Write-Host "  iText 7 is licensed under AGPL v3" -ForegroundColor White
+        Write-Host "  Commercial license required for closed-source applications" -ForegroundColor White
+        Write-Host "  More info: https://itextpdf.com/how-buy" -ForegroundColor White
+        Write-Host ""
+        Write-Host "Destination path: $DestinationPath" -ForegroundColor Cyan
+        Write-Host ""
 
         return $false
     }
     catch {
-        Write-Error "Failed to install PDF reader library: $_"
+        Write-Error "Failed to show installation instructions: $_"
         return $false
     }
 }

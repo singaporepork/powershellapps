@@ -460,11 +460,11 @@ A comprehensive module for extracting text from PDF files using PowerShell.
 - **Batch Processing**: Process multiple PDFs with built-in batch functions
 - **Export Functionality**: Save extracted text to files with various encodings
 - **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
-- **iTextSharp Integration**: Uses proven PDF library for reliable text extraction
+- **iText 7 Integration**: Uses proven PDF library for reliable text extraction
 
 #### Requirements
 
-**Dependency**: iTextSharp library (itextsharp.dll) - See setup guide below
+**Dependency**: iText 7 library (itext.kernel.dll and itext.io.dll) - See setup guide below
 
 #### Functions
 
@@ -546,7 +546,7 @@ $results | ForEach-Object {
 
 ##### Install-PdfReaderLibrary
 
-Provides instructions for installing the iTextSharp dependency.
+Provides instructions for installing the iText 7 dependency.
 
 ```powershell
 Install-PdfReaderLibrary
@@ -554,27 +554,27 @@ Install-PdfReaderLibrary
 
 #### Setup Instructions
 
-**Step 1: Install iTextSharp**
+**Step 1: Install iText 7**
 
-Download iTextSharp 5.5.13.3 from one of these sources:
+Download iText 7 from one of these sources:
 - GitHub: https://github.com/itext/itextsharp/releases/tag/5.5.13.3
-- NuGet: https://www.nuget.org/packages/iTextSharp/5.5.13.3
+- NuGet: https://www.nuget.org/packages/iText 7/5.5.13.3
 
 **Step 2: Extract the DLL**
 
-Extract `itextsharp.dll` from the download.
+Extract `itext.kernel.dll and itext.io.dll` from the download.
 
 **Step 3: Place the DLL**
 
-Put `itextsharp.dll` in one of these locations:
-- `Modules/lib/itextsharp.dll` (recommended)
-- `C:\Program Files\iTextSharp\itextsharp.dll`
-- `%USERPROFILE%\Documents\PowerShell\Modules\iTextSharp\itextsharp.dll`
+Put `itext.kernel.dll and itext.io.dll` in one of these locations:
+- `Modules/lib/itext.kernel.dll and itext.io.dll` (recommended)
+- `C:\Program Files\iText 7\itext.kernel.dll and itext.io.dll`
+- `%USERPROFILE%\Documents\PowerShell\Modules\iText 7\itext.kernel.dll and itext.io.dll`
 
 **Step 4: Unblock the DLL** (if downloaded from web)
 
 ```powershell
-Unblock-File -Path ".\Modules\lib\itextsharp.dll"
+Unblock-File -Path ".\Modules\lib\itext.kernel.dll and itext.io.dll"
 ```
 
 **Step 5: Verify Installation**
@@ -732,7 +732,7 @@ Write-Host "Inventory saved to: $reportPath"
 #### Installation
 
 1. Copy the `PdfTextReader.psm1` file to your PowerShell modules directory or project
-2. Install iTextSharp library (see Setup Instructions above)
+2. Install iText 7 library (see Setup Instructions above)
 3. Import the module in your script:
    ```powershell
    Import-Module ".\Modules\PdfTextReader.psm1"
@@ -764,7 +764,7 @@ Run the example scripts:
 - Run `Install-PdfReaderLibrary` to see where to place it
 
 **"This method can be called only from a trusted context"**
-- The DLL is blocked. Run: `Unblock-File -Path "path\to\itextsharp.dll"`
+- The DLL is blocked. Run: `Unblock-File -Path "path\to\itext.kernel.dll and itext.io.dll"`
 
 **"PDF appears to be corrupted"**
 - The PDF may be damaged or password-protected
@@ -783,7 +783,7 @@ Run the example scripts:
 
 #### License Note
 
-iTextSharp 5.5.13.3 is licensed under AGPL/LGPL. Ensure your usage complies with the license terms. Commercial licenses are available from iText.
+iText 7 is licensed under AGPL v3. Ensure your usage complies with the license terms. Commercial licenses are available from iText.
 
 ---
 
