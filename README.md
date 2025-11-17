@@ -1110,6 +1110,95 @@ The module automatically converts values:
 
 ---
 
+### UnixTimeConverter
+
+A comprehensive module for converting between DateTime objects and Unix timestamps.
+
+#### Features
+
+- **Bidirectional Conversion**: DateTime to Unix time and vice versa
+- **Multiple Precision Levels**: Seconds, milliseconds, and microseconds
+- **Timezone Handling**: Automatic UTC conversion with local time support
+- **Time Arithmetic**: Add/subtract time from timestamps
+- **Validation**: Test if values are valid Unix timestamps
+- **Formatting**: Convert timestamps to readable date strings
+- **Batch Operations**: Convert multiple dates efficiently
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+- **Pipeline Support**: Full pipeline integration
+
+#### Functions
+
+##### ConvertTo-UnixTime
+Converts DateTime objects to Unix timestamps.
+
+##### ConvertFrom-UnixTime
+Converts Unix timestamps to DateTime objects.
+
+##### Get-UnixTime
+Gets the current Unix timestamp.
+
+##### ConvertTo-UnixTimeFromString
+Parses date strings and converts to Unix timestamps.
+
+##### Format-UnixTimestamp
+Formats Unix timestamps as readable strings.
+
+##### Test-UnixTimestamp
+Validates if a number is a reasonable Unix timestamp.
+
+##### Get-TimeDifference
+Calculates time differences between dates.
+
+##### Add-UnixTime
+Performs time arithmetic on Unix timestamps.
+
+##### Get-UnixDayBoundary
+Gets the start or end of day for a timestamp.
+
+##### ConvertTo-UnixTimeBatch
+Converts multiple dates at once.
+
+#### Quick Examples
+
+```powershell
+Import-Module ".\Modules\UnixTimeConverter.psm1"
+
+# Get current Unix timestamp
+$now = Get-UnixTime
+
+# Convert date to Unix time
+$timestamp = ConvertTo-UnixTime -DateTime (Get-Date "2024-01-15 10:30:00")
+
+# Convert Unix time back to DateTime
+$date = ConvertFrom-UnixTime -Timestamp 1705315800 -ToLocalTime
+
+# Format Unix timestamp
+$formatted = Format-UnixTimestamp -Timestamp 1705315800
+# Output: 2024-01-15 10:30:00
+
+# Parse date string
+$timestamp = ConvertTo-UnixTimeFromString -DateString "2024-12-25"
+
+# Add time to timestamp
+$future = Add-UnixTime -Timestamp $now -Days 7 -Hours 2
+
+# Get time difference
+$days = Get-TimeDifference -StartDate $start -EndDate $end -Unit Days
+```
+
+#### Common Use Cases
+
+- **API Integration**: Send/receive timestamps in Unix format
+- **Log Processing**: Parse and analyze logs with Unix timestamps
+- **Database Operations**: Query time-based data efficiently
+- **Authentication**: Token expiry and session management
+- **File Management**: Work with file metadata as timestamps
+- **Scheduling**: Calculate future execution times
+
+For detailed examples and documentation, see `Examples/unix-time-guide.md`
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
