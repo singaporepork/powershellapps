@@ -1,0 +1,9 @@
+ProductID|ProductName|Category|Price|InStock
+P001|Laptop Computer|Electronics|1299.99|true
+P002|Wireless Mouse|Accessories|29.99|true
+P003|USB-C Cable|Accessories|15.99|true
+P004|Monitor 27"|Electronics|399.99|false
+P005|Keyboard Mechanical|Accessories|89.99|true
+P006|Webcam HD|Electronics|79.99|true
+P007|Desk Lamp|Office|45.50|true
+P008|Office Chair|Furniture|299.00|false

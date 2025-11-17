@@ -1,0 +1,25 @@
+# Application Configuration
+app.name=MyApplication
+app.version=2.1.0
+app.environment=Production
+
+# Database Settings
+database.server=sql-server-01.example.com
+database.port=1433
+database.name=ProductionDB
+database.username=app_user
+database.timeout=30
+database.pooling=true
+
+# API Settings
+api.baseurl=https://api.example.com/v2
+api.timeout=60
+api.retries=3
+api.ratelimit=1000
+
+# Logging Configuration
+logging.level=Information
+logging.path=/var/log/myapp
+logging.maxsize=10485760
+logging.retention=30
+logging.json=true

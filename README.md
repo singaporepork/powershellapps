@@ -787,6 +787,329 @@ iTextSharp 5.5.13.3 is licensed under AGPL/LGPL. Ensure your usage complies with
 
 ---
 
+### TextToJson
+
+A comprehensive module for converting various text formats to JSON.
+
+#### Features
+
+- **Multiple Format Support**: Convert CSV, INI, XML, key-value pairs, and delimited text to JSON
+- **Automatic Type Conversion**: Intelligently converts numbers, booleans, and strings
+- **Nested Structures**: Supports nested objects from dot-notation and INI sections
+- **JSON Formatting**: Pretty-print or compress JSON output
+- **JSON Validation**: Test if strings are valid JSON
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+- **Flexible Options**: Custom delimiters, headers, and encoding support
+
+#### Functions
+
+##### ConvertTo-JsonFromCsv
+
+Converts CSV data to JSON format.
+
+```powershell
+# From file
+$json = ConvertTo-JsonFromCsv -FilePath "data.csv" -Pretty
+
+# From text
+$csvText = "Name,Age`nJohn,30`nJane,25"
+$json = ConvertTo-JsonFromCsv -CsvText $csvText -Pretty
+
+# Tab-delimited
+$json = ConvertTo-JsonFromCsv -FilePath "data.tsv" -Delimiter "`t" -Pretty
+```
+
+##### ConvertTo-JsonFromKeyValue
+
+Converts key-value pairs to JSON.
+
+```powershell
+# Simple key-value
+$text = "name=John`nage=30`nemail=john@example.com"
+$json = ConvertTo-JsonFromKeyValue -Text $text -Pretty
+
+# Nested keys
+$text = "user.name=John`nuser.age=30`naddress.city=NYC"
+$json = ConvertTo-JsonFromKeyValue -Text $text -NestedSeparator '.' -Pretty
+```
+
+##### ConvertTo-JsonFromIni
+
+Converts INI files to JSON.
+
+```powershell
+$json = ConvertTo-JsonFromIni -FilePath "config.ini" -Pretty
+```
+
+##### ConvertTo-JsonFromDelimitedText
+
+Converts custom delimited text to JSON.
+
+```powershell
+# Pipe-delimited
+$headers = @('Name', 'Age', 'City')
+$json = ConvertTo-JsonFromDelimitedText -FilePath "data.txt" -Delimiter '|' -Headers $headers -Pretty
+
+# Space-delimited with regex
+$json = ConvertTo-JsonFromDelimitedText -Text $data -Delimiter '\s+' -Headers $headers -Pretty
+```
+
+##### ConvertTo-JsonFromXml
+
+Converts XML to JSON.
+
+```powershell
+$json = ConvertTo-JsonFromXml -FilePath "data.xml" -Pretty
+```
+
+##### ConvertTo-JsonFromObject
+
+Converts PowerShell objects/hashtables to JSON.
+
+```powershell
+$hashtable = @{ Name = "John"; Age = 30; Skills = @("PowerShell", "Python") }
+$json = ConvertTo-JsonFromObject -InputObject $hashtable -Pretty
+```
+
+##### Format-JsonText
+
+Formats JSON with proper indentation.
+
+```powershell
+$minified = '{"name":"John","age":30}'
+$formatted = Format-JsonText -Json $minified
+```
+
+##### Test-JsonText
+
+Validates if a string is valid JSON.
+
+```powershell
+if (Test-JsonText -Json $jsonString) {
+    Write-Host "Valid JSON"
+}
+```
+
+##### Export-ToJsonFile
+
+Exports data to a JSON file.
+
+```powershell
+$data = @{ Name = "John"; Age = 30 }
+Export-ToJsonFile -InputObject $data -FilePath "output.json" -Pretty -Force
+```
+
+#### Usage Examples
+
+##### Example 1: Convert CSV to JSON
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+# Read CSV file and convert to JSON
+$json = ConvertTo-JsonFromCsv -FilePath "C:\data\employees.csv" -Pretty
+
+# Save to file
+$json | Out-File -FilePath "C:\data\employees.json" -Encoding UTF8
+```
+
+##### Example 2: Migrate INI Configuration to JSON
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+# Convert old INI config to modern JSON
+$json = ConvertTo-JsonFromIni -FilePath "C:\config\app.ini" -Pretty
+
+# Save new configuration
+$json | Out-File -FilePath "C:\config\app.json" -Encoding UTF8
+
+Write-Host "Configuration migrated to JSON format"
+```
+
+##### Example 3: Build JSON from Nested Key-Value Data
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+$configText = @"
+database.host=localhost
+database.port=5432
+database.name=myapp
+api.endpoint=https://api.example.com
+api.timeout=30
+api.retries=3
+"@
+
+$json = ConvertTo-JsonFromKeyValue -Text $configText -NestedSeparator '.' -Pretty
+
+# Result:
+# {
+#   "database": {
+#     "host": "localhost",
+#     "port": 5432,
+#     "name": "myapp"
+#   },
+#   "api": {
+#     "endpoint": "https://api.example.com",
+#     "timeout": 30,
+#     "retries": 3
+#   }
+# }
+```
+
+##### Example 4: Convert and Post to API
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+Import-Module ".\Modules\RestApiAuth.psm1"
+
+# Convert CSV data to JSON
+$json = ConvertTo-JsonFromCsv -FilePath "C:\exports\customers.csv" -Compress
+
+# Post to API
+$session = New-RestApiSession -BaseUri "https://api.example.com" -AuthMethod Bearer -Token $token
+$response = Invoke-RestApiRequest -Session $session -Endpoint "/import/customers" -Method POST -Body $json
+
+Write-Host "Imported $($response.recordsProcessed) records"
+```
+
+##### Example 5: Format and Validate JSON
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+# Receive minified JSON from API
+$minified = Invoke-RestMethod -Uri "https://api.example.com/data"
+
+# Validate
+if (Test-JsonText -Json $minified) {
+    # Format for readability
+    $formatted = Format-JsonText -Json $minified
+
+    # Save to file
+    $formatted | Out-File -FilePath "C:\data\api-response.json" -Encoding UTF8
+
+    Write-Host "JSON validated and formatted"
+}
+else {
+    Write-Host "Invalid JSON received" -ForegroundColor Red
+}
+```
+
+##### Example 6: Batch Convert Configuration Files
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+# Convert all INI files in directory to JSON
+Get-ChildItem -Path "C:\legacy-configs" -Filter "*.ini" | ForEach-Object {
+    $outputPath = $_.FullName -replace '\.ini$', '.json'
+
+    Write-Host "Converting: $($_.Name)..."
+
+    $json = ConvertTo-JsonFromIni -FilePath $_.FullName -Pretty
+    $json | Out-File -FilePath $outputPath -Encoding UTF8
+
+    Write-Host "  Saved to: $outputPath" -ForegroundColor Green
+}
+
+Write-Host "Batch conversion complete!"
+```
+
+##### Example 7: System Inventory to JSON
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+# Collect system information
+$systemInfo = @{
+    ComputerName = $env:COMPUTERNAME
+    OSVersion = [System.Environment]::OSVersion.VersionString
+    PowerShellVersion = $PSVersionTable.PSVersion.ToString()
+    Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    Memory = @{
+        TotalGB = [Math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+    }
+    Processors = (Get-CimInstance Win32_Processor).Name
+    Disks = Get-PSDrive -PSProvider FileSystem | Select-Object Name,
+        @{Name='UsedGB';Expression={[Math]::Round($_.Used/1GB,2)}},
+        @{Name='FreeGB';Expression={[Math]::Round($_.Free/1GB,2)}}
+}
+
+# Export as JSON
+Export-ToJsonFile -InputObject $systemInfo -FilePath "C:\reports\system-inventory.json" -Pretty -Force
+
+Write-Host "System inventory exported to JSON"
+```
+
+##### Example 8: Parse Log Data to JSON
+
+```powershell
+Import-Module ".\Modules\TextToJson.psm1"
+
+# Parse pipe-delimited log file
+$logFile = @"
+2024-01-15 10:30:15|INFO|Application started|UserService
+2024-01-15 10:30:16|INFO|Database connected|DataLayer
+2024-01-15 10:31:20|ERROR|Failed to process request|OrderService
+2024-01-15 10:31:25|WARN|Retry attempt 1|OrderService
+"@
+
+$headers = @('Timestamp', 'Level', 'Message', 'Component')
+$json = ConvertTo-JsonFromDelimitedText -Text $logFile -Delimiter '\|' -Headers $headers -Pretty
+
+# Now you can analyze logs as structured JSON
+$logs = $json | ConvertFrom-Json
+$errors = $logs | Where-Object { $_.Level -eq 'ERROR' }
+
+Write-Host "Found $($errors.Count) error(s) in logs"
+```
+
+#### Installation
+
+1. Copy the `TextToJson.psm1` file to your PowerShell modules directory or project
+2. Import the module in your script:
+   ```powershell
+   Import-Module ".\Modules\TextToJson.psm1"
+   ```
+
+#### Testing
+
+Run the example script:
+
+```powershell
+.\Examples\Use-TextToJson.ps1
+```
+
+#### Common Use Cases
+
+- **Configuration Migration**: Convert INI/XML configs to JSON for modern applications
+- **Data Export**: Convert CSV exports to JSON for API consumption
+- **Log Parsing**: Transform structured log files to JSON for analysis
+- **API Integration**: Format data as JSON payloads for REST APIs
+- **Documentation**: Convert structured text documentation to JSON
+- **Data Transformation**: Normalize data from various formats to JSON
+- **Automation**: Build JSON configs from PowerShell scripts
+- **Reporting**: Export system information as JSON for dashboards
+
+#### Type Conversion
+
+The module automatically converts values:
+- **Numbers**: `"123"` → `123`, `"45.67"` → `45.67`
+- **Booleans**: `"true"`/`"false"` → `true`/`false`
+- **Strings**: All other values remain as strings
+
+#### Best Practices
+
+1. **Use -Pretty for Files**: Always use `-Pretty` for human-readable JSON files
+2. **Use -Compress for APIs**: Omit `-Pretty` or use `-Compress` for API payloads
+3. **Validate JSON**: Use `Test-JsonText` before consuming JSON
+4. **Handle Encoding**: Always specify UTF8 encoding when writing files
+5. **Test First**: Validate conversions with sample data before batch operations
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
