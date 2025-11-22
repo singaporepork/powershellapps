@@ -1199,6 +1199,307 @@ For detailed examples and documentation, see `Examples/unix-time-guide.md`
 
 ---
 
+### ScheduledTaskUpdater
+
+A comprehensive module for managing and updating Windows Scheduled Tasks.
+
+#### Features
+
+- **Task Management**: Get, update, enable, disable, start, and stop scheduled tasks
+- **Trigger Updates**: Modify when tasks run (daily, weekly, at startup, at logon)
+- **Action Updates**: Change what the task executes
+- **Principal Updates**: Modify security context (user account, privileges)
+- **Settings Updates**: Configure task behavior (timeouts, retries, battery options)
+- **Bulk Operations**: List tasks by path, process multiple tasks
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+- **WhatIf Support**: Test changes before applying them
+
+#### Requirements
+
+- Windows operating system
+- Administrator privileges (for most operations)
+- ScheduledTasks module (built-in on Windows)
+
+#### Functions
+
+##### Test-ScheduledTaskExists
+
+Checks if a scheduled task exists.
+
+```powershell
+if (Test-ScheduledTaskExists -TaskName "MyTask") {
+    Write-Host "Task exists"
+}
+
+# Check in specific path
+Test-ScheduledTaskExists -TaskName "Cleanup" -TaskPath "\MyCompany\Scripts\"
+```
+
+##### Get-ScheduledTaskInfo
+
+Gets detailed information about a task.
+
+```powershell
+$info = Get-ScheduledTaskInfo -TaskName "MyTask"
+
+Write-Host "State: $($info.State)"
+Write-Host "Triggers: $($info.Triggers.Count)"
+Write-Host "Actions: $($info.Actions[0].Execute)"
+```
+
+##### Update-ScheduledTaskTrigger
+
+Updates when the task runs.
+
+```powershell
+# Run daily at 9:00 AM
+Update-ScheduledTaskTrigger -TaskName "MyTask" -TriggerType Daily -StartTime "09:00"
+
+# Run weekly on Monday, Wednesday, Friday
+Update-ScheduledTaskTrigger -TaskName "MyTask" -TriggerType Weekly `
+    -StartTime "08:00" -DaysOfWeek Monday, Wednesday, Friday
+
+# Run at system startup
+Update-ScheduledTaskTrigger -TaskName "MyTask" -TriggerType AtStartup
+
+# Run at user logon
+Update-ScheduledTaskTrigger -TaskName "MyTask" -TriggerType AtLogon
+```
+
+##### Add-ScheduledTaskTrigger
+
+Adds a trigger without removing existing triggers.
+
+```powershell
+# Add an additional daily trigger
+Add-ScheduledTaskTrigger -TaskName "MyTask" -TriggerType Daily -StartTime "14:00"
+```
+
+##### Update-ScheduledTaskAction
+
+Updates what the task executes.
+
+```powershell
+# Run a PowerShell script
+Update-ScheduledTaskAction -TaskName "MyTask" `
+    -Execute "powershell.exe" `
+    -Argument "-NoProfile -File C:\Scripts\MyScript.ps1"
+
+# Run an executable with working directory
+Update-ScheduledTaskAction -TaskName "MyTask" `
+    -Execute "C:\App\program.exe" `
+    -Argument "--config settings.json" `
+    -WorkingDirectory "C:\App"
+```
+
+##### Update-ScheduledTaskPrincipal
+
+Updates the security context.
+
+```powershell
+# Run as SYSTEM with highest privileges
+Update-ScheduledTaskPrincipal -TaskName "MyTask" `
+    -UserId "SYSTEM" `
+    -RunLevel Highest
+
+# Run as specific user
+Update-ScheduledTaskPrincipal -TaskName "MyTask" `
+    -UserId "DOMAIN\ServiceAccount" `
+    -LogonType Password `
+    -RunLevel Limited
+```
+
+##### Update-ScheduledTaskSettings
+
+Updates task behavior settings.
+
+```powershell
+# Allow on battery and set time limit
+Update-ScheduledTaskSettings -TaskName "MyTask" `
+    -AllowStartIfOnBatteries $true `
+    -ExecutionTimeLimit "PT2H"
+
+# Configure restart on failure
+Update-ScheduledTaskSettings -TaskName "MyTask" `
+    -RestartCount 3 `
+    -RestartInterval "PT10M"
+
+# Start when available, wake to run
+Update-ScheduledTaskSettings -TaskName "MyTask" `
+    -StartWhenAvailable $true `
+    -WakeToRun $true
+```
+
+##### Enable/Disable Tasks
+
+```powershell
+# Disable a task
+Disable-ScheduledTaskState -TaskName "MyTask"
+
+# Enable a task
+Enable-ScheduledTaskState -TaskName "MyTask"
+```
+
+##### Start/Stop Tasks
+
+```powershell
+# Run task immediately
+Start-ScheduledTaskNow -TaskName "MyTask"
+
+# Stop running task
+Stop-ScheduledTaskNow -TaskName "MyTask"
+```
+
+##### Get-ScheduledTasksByPath
+
+Lists all tasks in a folder.
+
+```powershell
+# List tasks in custom folder
+Get-ScheduledTasksByPath -TaskPath "\MyCompany\Scripts\"
+
+# List recursively
+Get-ScheduledTasksByPath -TaskPath "\" -Recurse
+```
+
+##### Update-ScheduledTaskDescription
+
+Updates the task description.
+
+```powershell
+Update-ScheduledTaskDescription -TaskName "MyTask" `
+    -Description "Daily backup - runs at 3 AM"
+```
+
+#### Usage Examples
+
+##### Example 1: Complete Task Update
+
+```powershell
+Import-Module ".\Modules\ScheduledTaskUpdater.psm1"
+
+$taskName = "DailyBackup"
+
+# Verify task exists
+if (Test-ScheduledTaskExists -TaskName $taskName) {
+    # Update trigger
+    Update-ScheduledTaskTrigger -TaskName $taskName `
+        -TriggerType Daily `
+        -StartTime "03:00"
+
+    # Update action
+    Update-ScheduledTaskAction -TaskName $taskName `
+        -Execute "powershell.exe" `
+        -Argument "-File C:\Scripts\Backup.ps1"
+
+    # Configure settings
+    Update-ScheduledTaskSettings -TaskName $taskName `
+        -StartWhenAvailable $true `
+        -ExecutionTimeLimit "PT4H" `
+        -RestartCount 2
+
+    # Run as SYSTEM
+    Update-ScheduledTaskPrincipal -TaskName $taskName `
+        -UserId "SYSTEM" `
+        -RunLevel Highest
+
+    # Enable the task
+    Enable-ScheduledTaskState -TaskName $taskName
+
+    Write-Host "Task updated successfully"
+}
+```
+
+##### Example 2: Bulk Disable Tasks
+
+```powershell
+Import-Module ".\Modules\ScheduledTaskUpdater.psm1"
+
+# Disable all tasks in a folder
+$tasks = Get-ScheduledTasksByPath -TaskPath "\OldJobs\"
+$tasks | ForEach-Object {
+    Disable-ScheduledTaskState -TaskName $_.TaskName -TaskPath $_.TaskPath
+    Write-Host "Disabled: $($_.TaskName)"
+}
+```
+
+##### Example 3: Generate Task Report
+
+```powershell
+Import-Module ".\Modules\ScheduledTaskUpdater.psm1"
+
+# Get all tasks in company folder
+$tasks = Get-ScheduledTasksByPath -TaskPath "\MyCompany\" -Recurse
+
+# Generate report
+$report = $tasks | ForEach-Object {
+    $info = Get-ScheduledTaskInfo -TaskName $_.TaskName -TaskPath $_.TaskPath
+
+    [PSCustomObject]@{
+        Name = $_.TaskName
+        Path = $_.TaskPath
+        State = $_.State
+        Triggers = $info.Triggers.Count
+        RunLevel = $info.Principal.RunLevel
+    }
+}
+
+$report | Export-Csv -Path "C:\Reports\tasks.csv" -NoTypeInformation
+```
+
+#### Time Duration Format
+
+Task scheduler uses ISO 8601 duration format:
+
+| Format | Meaning |
+|--------|---------|
+| `PT0S` | No limit |
+| `PT30M` | 30 minutes |
+| `PT1H` | 1 hour |
+| `PT2H30M` | 2 hours 30 minutes |
+| `P1D` | 1 day |
+
+#### Installation
+
+1. Copy `ScheduledTaskUpdater.psm1` to your modules directory
+2. Import the module:
+   ```powershell
+   Import-Module ".\Modules\ScheduledTaskUpdater.psm1"
+   ```
+
+#### Testing
+
+Run the example script:
+
+```powershell
+.\Examples\ScheduledTaskUpdater-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Deployment Automation**: Update task schedules during deployments
+- **Maintenance Windows**: Temporarily disable tasks during maintenance
+- **Security Hardening**: Update principals to use least privilege
+- **Monitoring**: Generate reports of all scheduled tasks
+- **Migration**: Bulk update tasks when moving servers
+- **Compliance**: Ensure tasks meet organizational standards
+
+#### Troubleshooting
+
+**"Access Denied" Error**
+- Run PowerShell as Administrator
+
+**Task Not Found**
+- Verify task name and path
+- Use `Get-ScheduledTasksByPath` to list available tasks
+
+**Invalid Duration Format**
+- Use ISO 8601: `PT` for time, `P` for periods
+
+For detailed documentation, see `Modules/SCHEDULEDTASK_GUIDE.md`
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
