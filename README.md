@@ -1904,6 +1904,218 @@ Run the example script:
 
 ---
 
+### LocalUserManager
+
+A comprehensive module for creating and managing local Windows user accounts.
+
+#### Features
+
+- **User Creation**: Create local users with full property control
+- **Batch Operations**: Create multiple users from array or CSV
+- **Password Management**: Set, reset, and validate passwords
+- **Group Management**: Add/remove users from groups
+- **Account Control**: Enable, disable, rename, and remove accounts
+- **User Queries**: Get detailed user info and list all users
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Requirements
+
+- Windows operating system
+- Administrator privileges
+- LocalAccounts module (built-in on Windows)
+
+#### Functions
+
+##### Create Users
+
+```powershell
+# Create a new user
+$password = ConvertTo-SecureString "P@ssw0rd123!" -AsPlainText -Force
+New-LocalUserAccount -Username "jdoe" -Password $password -FullName "John Doe"
+
+# Create with options
+New-LocalUserAccount -Username "svcaccount" `
+    -Password $password `
+    -Description "Service Account" `
+    -PasswordNeverExpires `
+    -Groups "Backup Operators"
+
+# Create with password change required
+New-LocalUserAccount -Username "newuser" `
+    -Password $password `
+    -PasswordChangeRequired `
+    -Groups "Users"
+```
+
+##### Batch User Creation
+
+```powershell
+# Create from array
+$users = @(
+    @{ Username = "user1"; FullName = "User One" },
+    @{ Username = "user2"; FullName = "User Two" }
+)
+New-LocalUserBatch -Users $users -DefaultPassword $password -DefaultGroups "Users"
+
+# Create from CSV
+New-LocalUserBatch -CsvPath "C:\users.csv" -DefaultPassword $password
+```
+
+##### User Information
+
+```powershell
+# Check if user exists
+if (Test-LocalUserExists -Username "jdoe") {
+    Write-Host "User exists"
+}
+
+# Get detailed user info
+$info = Get-LocalUserInfo -Username "jdoe" -IncludeGroups
+
+# Get all users
+Get-AllLocalUsers
+Get-AllLocalUsers -IncludeDisabled -IncludeSystem
+```
+
+##### Password Management
+
+```powershell
+# Set new password
+$newPass = ConvertTo-SecureString "NewP@ss!" -AsPlainText -Force
+Set-LocalUserPassword -Username "jdoe" -Password $newPass
+
+# Require change at next logon
+Set-LocalUserPassword -Username "jdoe" -Password $newPass -RequireChange
+
+# Validate password
+Test-LocalUserPassword -Username "jdoe" -Password $testPassword
+```
+
+##### Modify User Properties
+
+```powershell
+# Update properties
+Set-LocalUserProperties -Username "jdoe" `
+    -FullName "John M. Doe" `
+    -Description "IT Department"
+
+# Set account expiration
+Set-LocalUserProperties -Username "contractor" `
+    -AccountExpires (Get-Date).AddMonths(3)
+
+# Password never expires (service accounts)
+Set-LocalUserProperties -Username "svcaccount" `
+    -PasswordNeverExpires $true
+```
+
+##### Account State
+
+```powershell
+# Disable account
+Disable-LocalUserAccount -Username "jdoe"
+
+# Enable account
+Enable-LocalUserAccount -Username "jdoe"
+
+# Rename account
+Rename-LocalUserAccount -OldUsername "jdoe" -NewUsername "john.doe"
+
+# Remove account
+Remove-LocalUserAccount -Username "tempuser" -Force
+```
+
+##### Group Management
+
+```powershell
+# Add to groups
+Add-LocalUserToGroup -Username "jdoe" -GroupName "Administrators"
+Add-LocalUserToGroup -Username "jdoe" -GroupName "Remote Desktop Users", "Backup Operators"
+
+# Remove from group
+Remove-LocalUserFromGroup -Username "jdoe" -GroupName "Administrators"
+
+# Get user's groups
+Get-LocalUserGroups -Username "jdoe"
+
+# Get group members
+Get-LocalGroupMembers -GroupName "Administrators"
+
+# List all groups
+Get-AllLocalGroups
+```
+
+#### Usage Example
+
+```powershell
+Import-Module ".\Modules\LocalUserManager.psm1"
+
+# Employee onboarding
+$password = ConvertTo-SecureString "Welcome123!" -AsPlainText -Force
+
+$user = New-LocalUserAccount -Username "jsmith" `
+    -Password $password `
+    -FullName "Jane Smith" `
+    -Description "Marketing Department" `
+    -PasswordChangeRequired `
+    -Groups "Users", "Marketing Team"
+
+# Get the created user's info
+Get-LocalUserInfo -Username "jsmith" -IncludeGroups
+```
+
+#### Batch Import Example
+
+CSV format (`users.csv`):
+```csv
+Username,FullName,Description,Groups
+user1,User One,IT Department,Users
+user2,User Two,HR Department,"Users,HR Team"
+```
+
+```powershell
+$results = New-LocalUserBatch -CsvPath ".\users.csv" `
+    -DefaultPassword $password `
+    -PasswordChangeRequired
+
+$results | Format-Table
+```
+
+#### Installation
+
+1. Copy `LocalUserManager.psm1` to your modules directory
+2. Import the module (requires Admin):
+   ```powershell
+   Import-Module ".\Modules\LocalUserManager.psm1"
+   ```
+
+#### Testing
+
+Run the example script (as Administrator):
+
+```powershell
+.\Examples\LocalUserManager-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Employee Onboarding**: Create accounts with standard settings
+- **Service Accounts**: Create accounts with non-expiring passwords
+- **Temporary Access**: Create time-limited accounts
+- **Bulk Provisioning**: Import users from HR systems
+- **Security Audits**: Review users and group memberships
+- **Account Cleanup**: Disable/remove departed employee accounts
+
+#### Security Best Practices
+
+- Always require password change for new accounts
+- Use strong default passwords
+- Disable accounts before deleting (audit trail)
+- Regularly audit Administrator group membership
+- Set account expiration for contractors
+- Use service accounts for applications, not personal accounts
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
