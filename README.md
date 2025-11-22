@@ -2116,6 +2116,200 @@ Run the example script (as Administrator):
 
 ---
 
+### EventLogReader
+
+A comprehensive module for reading, searching, and analyzing Windows Event Logs.
+
+#### Features
+
+- **Event Retrieval**: Get events with filtering by level, time, ID, provider
+- **Search**: Search event messages with text or regex patterns
+- **Export**: Export to CSV, JSON, or HTML formats
+- **Analysis**: Get summaries, trends, and frequent events
+- **Monitoring**: Watch logs for new events in real-time
+- **Remote Support**: Query event logs on remote computers
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Functions
+
+##### Get Events
+
+```powershell
+# Get errors from System log
+Get-EventLogEntries -LogName System -Level Error -MaxEvents 50
+
+# Filter by date range
+Get-EventLogEntries -LogName Application `
+    -StartTime (Get-Date).AddDays(-7) `
+    -EndTime (Get-Date) `
+    -MaxEvents 100
+
+# Filter by Event ID
+Get-EventLogEntries -LogName Security -EventId 4624,4625 -MaxEvents 100
+
+# Filter by provider
+Get-EventLogEntries -LogName System `
+    -ProviderName "Microsoft-Windows-WindowsUpdateClient"
+```
+
+##### Get Summary
+
+```powershell
+# Get log summary for last 24 hours
+$summary = Get-EventLogSummary -LogName System -Hours 24
+
+# Returns: TotalEvents, Critical, Error, Warning, TopProviders
+```
+
+##### Get Critical Events
+
+```powershell
+# Get errors from System and Application logs
+Get-CriticalEvents -Hours 24
+
+# Include warnings
+Get-CriticalEvents -Hours 48 -IncludeWarnings
+```
+
+##### Search Messages
+
+```powershell
+# Simple text search
+Search-EventLogMessage -LogName System -Pattern "disk"
+
+# Regex search
+Search-EventLogMessage -LogName Application `
+    -Pattern "error.*database" `
+    -UseRegex
+```
+
+##### Export Events
+
+```powershell
+# Export to CSV
+$events = Get-EventLogEntries -LogName System -Level Error
+Export-EventLogEntries -Events $events -OutputPath "C:\logs\errors.csv"
+
+# Export to HTML report
+$events | Export-EventLogEntries -OutputPath "C:\logs\report.html" -Format HTML
+
+# Export to JSON
+$events | Export-EventLogEntries -OutputPath "C:\logs\events.json" -Format JSON
+```
+
+##### Log Information
+
+```powershell
+# List available logs
+Get-EventLogNames
+
+# Get providers for a log
+Get-EventLogProviders -LogName System
+```
+
+##### Analysis
+
+```powershell
+# Get frequent events
+Get-FrequentEvents -LogName System -Hours 24 -Top 10
+
+# Get event trends
+Get-EventLogTrend -LogName Application -Days 7 -GroupBy Day
+Get-EventLogTrend -LogName System -Days 1 -GroupBy Hour -Level Error
+```
+
+##### Monitor Events
+
+```powershell
+# Watch for new events (Ctrl+C to stop)
+Watch-EventLog -LogName System -Level Error,Warning
+
+# Watch specific provider
+Watch-EventLog -LogName Application `
+    -ProviderName "MyApp" `
+    -IntervalSeconds 5 `
+    -Duration 60
+```
+
+##### Remote Computers
+
+```powershell
+# Query remote computer
+Get-EventLogEntries -LogName System `
+    -ComputerName "Server01" `
+    -Level Error
+
+# With credentials
+$cred = Get-Credential
+Get-EventLogSummary -LogName System `
+    -ComputerName "Server01" `
+    -Credential $cred
+```
+
+#### Usage Example
+
+```powershell
+Import-Module ".\Modules\EventLogReader.psm1"
+
+# Daily health check
+$logs = @('System', 'Application')
+
+foreach ($log in $logs) {
+    $summary = Get-EventLogSummary -LogName $log -Hours 24
+    Write-Host "$($log): $($summary.Error) errors, $($summary.Warning) warnings"
+}
+
+# Get critical events and export
+$critical = Get-CriticalEvents -Hours 24
+if ($critical.Count -gt 0) {
+    $critical | Export-EventLogEntries `
+        -OutputPath "C:\Reports\critical.html" `
+        -Format HTML
+}
+```
+
+#### Common Event IDs
+
+**Security Log:**
+- 4624 - Successful logon
+- 4625 - Failed logon
+- 4634 - Logoff
+- 4720 - User account created
+- 4726 - User account deleted
+
+**System Log:**
+- 1074 - System shutdown/restart
+- 6005 - Event log service started
+- 6006 - Event log service stopped
+- 7045 - New service installed
+
+#### Installation
+
+1. Copy `EventLogReader.psm1` to your modules directory
+2. Import the module:
+   ```powershell
+   Import-Module ".\Modules\EventLogReader.psm1"
+   ```
+
+#### Testing
+
+Run the example script:
+
+```powershell
+.\Examples\EventLogReader-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Health Monitoring**: Daily/weekly event summaries
+- **Troubleshooting**: Search for specific errors
+- **Security Audits**: Review logon events and account changes
+- **Performance Analysis**: Identify frequent events
+- **Compliance**: Export audit logs
+- **Alerting**: Monitor for specific events
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
