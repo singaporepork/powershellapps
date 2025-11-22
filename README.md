@@ -2310,6 +2310,266 @@ Run the example script:
 
 ---
 
+### FileContentSearcher
+
+A comprehensive module for searching text patterns within file contents.
+
+#### Features
+
+- **Pattern Search**: Search files using text or regex patterns
+- **Multi-Pattern Support**: Search for multiple patterns simultaneously
+- **Context Display**: Show lines before and after matches
+- **Search and Replace**: Replace text across multiple files with backup support
+- **Export Results**: Export to CSV, JSON, HTML, or text formats
+- **Result Summary**: Get statistics and file breakdown of search results
+- **Pipeline Support**: Full integration with PowerShell pipeline
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Functions
+
+##### Search-FileContent
+
+Searches for patterns in file contents.
+
+```powershell
+# Basic search
+$results = Search-FileContent -Path "C:\Scripts" -Pattern "function"
+
+# Search specific file types
+$results = Search-FileContent -Path "C:\Code" -Pattern "TODO" -Include "*.ps1"
+
+# Case-sensitive regex search
+$results = Search-FileContent -Path "C:\Logs" `
+    -Pattern "error.*database" `
+    -CaseSensitive
+
+# With context lines
+$results = Search-FileContent -Path "C:\Scripts" -Pattern "catch" -Context 2
+
+# Recursive search (default)
+$results = Search-FileContent -Path "C:\Project" -Pattern "config" -Recurse
+```
+
+##### Find-TextInFiles
+
+Simplified function for quick text searches.
+
+```powershell
+# Simple text search
+$results = Find-TextInFiles -Path "C:\Code" -Text "TODO"
+
+# Search specific file types
+$results = Find-TextInFiles -Path "C:\Code" -Text "deprecated" -FileTypes ".ps1", ".psm1"
+
+# Non-recursive search
+$results = Find-TextInFiles -Path "C:\Project" -Text "config" -NoRecurse
+```
+
+##### Test-FileContainsText
+
+Tests if a file contains specific text.
+
+```powershell
+# Check if file contains text
+if (Test-FileContainsText -Path "C:\config.ini" -Pattern "server=") {
+    Write-Host "Configuration contains server setting"
+}
+
+# Case-sensitive check
+$hasError = Test-FileContainsText -Path "C:\app.log" -Pattern "ERROR" -CaseSensitive
+```
+
+##### Search-FileContentMultiple
+
+Searches for multiple patterns.
+
+```powershell
+# Search for multiple patterns
+$patterns = @("error", "warning", "critical")
+$results = Search-FileContentMultiple -Path "C:\Logs" -Patterns $patterns
+
+# Require all patterns to match in same file
+$results = Search-FileContentMultiple -Path "C:\Config" `
+    -Patterns @("database", "password") `
+    -MatchAll
+```
+
+##### Replace-FileContent
+
+Replaces text across files.
+
+```powershell
+# Replace with backup
+Replace-FileContent -Path "C:\Scripts" `
+    -Pattern "old-server" `
+    -Replacement "new-server" `
+    -Include "*.config" `
+    -CreateBackup
+
+# Preview changes
+Replace-FileContent -Path "C:\Scripts" `
+    -Pattern "localhost" `
+    -Replacement "192.168.1.100" `
+    -WhatIf
+```
+
+##### Export-SearchResults
+
+Exports results to various formats.
+
+```powershell
+# Export to CSV
+Export-SearchResults -Results $results -OutputPath "C:\results.csv" -Format CSV
+
+# Export to HTML
+Export-SearchResults -Results $results -OutputPath "C:\report.html" -Format HTML
+
+# Export to JSON
+Export-SearchResults -Results $results -OutputPath "C:\results.json" -Format JSON
+```
+
+##### Get-SearchSummary
+
+Gets statistics about search results.
+
+```powershell
+$summary = Get-SearchSummary -Results $results
+
+Write-Host "Total Matches: $($summary.TotalMatches)"
+Write-Host "Files with Matches: $($summary.FilesWithMatches)"
+$summary.FileBreakdown | Format-Table
+```
+
+##### Get-LineContext
+
+Gets additional context around a match.
+
+```powershell
+$context = Get-LineContext -Path $match.Path `
+    -LineNumber $match.LineNumber `
+    -Before 5 `
+    -After 5
+```
+
+#### Usage Examples
+
+##### Example 1: Basic File Search
+
+```powershell
+Import-Module ".\Modules\FileContentSearcher.psm1"
+
+# Search for errors in log files
+$results = Search-FileContent -Path "C:\Logs" `
+    -Pattern "error" `
+    -Include "*.log"
+
+$results | Format-Table Filename, LineNumber, Line -AutoSize
+```
+
+##### Example 2: Code Audit
+
+```powershell
+Import-Module ".\Modules\FileContentSearcher.psm1"
+
+# Find potential security issues
+$patterns = @(
+    "password\s*=",
+    "Invoke-Expression",
+    "ConvertTo-SecureString.*-AsPlainText"
+)
+
+$issues = Search-FileContentMultiple -Path "C:\Project" `
+    -Patterns $patterns `
+    -Include "*.ps1"
+
+$summary = Get-SearchSummary -Results $issues
+Write-Host "Found $($summary.TotalMatches) potential issues"
+```
+
+##### Example 3: Search and Replace
+
+```powershell
+Import-Module ".\Modules\FileContentSearcher.psm1"
+
+# Update server name in configs
+Replace-FileContent -Path "C:\App\Config" `
+    -Pattern "old-db-server" `
+    -Replacement "new-db-server" `
+    -Include "*.config", "*.json" `
+    -CreateBackup
+```
+
+##### Example 4: Log Analysis
+
+```powershell
+Import-Module ".\Modules\FileContentSearcher.psm1"
+
+# Find errors with context
+$errors = Search-FileContent -Path "C:\Logs" `
+    -Pattern "ERROR|CRITICAL" `
+    -Include "*.log" `
+    -Context 2
+
+# Export to HTML report
+Export-SearchResults -Results $errors `
+    -OutputPath "C:\Reports\errors.html" `
+    -Format HTML
+```
+
+##### Example 5: Find TODOs in Code
+
+```powershell
+Import-Module ".\Modules\FileContentSearcher.psm1"
+
+# Find all TODOs and FIXMEs
+$todos = Search-FileContent -Path "C:\Project" `
+    -Pattern "TODO|FIXME|HACK" `
+    -Include "*.ps1", "*.cs", "*.js"
+
+# Group by file
+$todos | Group-Object Path | ForEach-Object {
+    Write-Host "`nFile: $($_.Name) - $($_.Count) items"
+    $_.Group | ForEach-Object {
+        Write-Host "  Line $($_.LineNumber): $($_.Line.Trim())"
+    }
+}
+```
+
+#### Installation
+
+1. Copy `FileContentSearcher.psm1` to your modules directory
+2. Import the module:
+   ```powershell
+   Import-Module ".\Modules\FileContentSearcher.psm1"
+   ```
+
+#### Testing
+
+Run the example script:
+
+```powershell
+.\Examples\FileContentSearcher-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Log Analysis**: Search logs for errors and patterns
+- **Code Review**: Find TODOs, FIXMEs, and potential issues
+- **Security Audits**: Search for hardcoded credentials
+- **Configuration Updates**: Find and replace values across files
+- **Documentation**: Find references to specific terms
+- **Data Discovery**: Locate files containing specific data
+
+#### Tips for Effective Searching
+
+- Use `-SimpleMatch` for literal strings (faster, no regex)
+- Use `-Context` to see surrounding lines
+- Use `-Include` to limit file types and improve performance
+- Use `Get-SearchSummary` for quick overview
+- Always use `-CreateBackup` when replacing content
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
