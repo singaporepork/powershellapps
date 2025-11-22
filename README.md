@@ -2570,6 +2570,373 @@ Run the example script:
 
 ---
 
+### HardeningValidator
+
+A comprehensive module for validating Windows OS hardening settings against security benchmarks like CIS (Center for Internet Security).
+
+#### Features
+
+- **CIS Benchmark Checks**: Built-in checks based on CIS Benchmark for Windows Server 2019
+- **Multiple Check Types**: Registry, services, firewall, local accounts, audit policies, security policies
+- **Custom Checks**: Define and import your own hardening checks
+- **Multiple Report Formats**: Generate reports in HTML, JSON, CSV, or PowerShell objects
+- **Compliance Scoring**: Calculate overall compliance score with severity breakdown
+- **Baseline Export**: Export current system configuration as a baseline
+- **Filtering**: Filter checks by category or severity level
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Requirements
+
+- Windows operating system
+- Administrator privileges (for most checks)
+- PowerShell 5.0 or later
+
+#### Functions
+
+##### Initialize-HardeningValidator
+
+Sets up the validator with configuration options.
+
+```powershell
+# Basic initialization
+Initialize-HardeningValidator -OutputPath "C:\Reports" -BenchmarkVersion "CIS 1.0.0"
+
+# Configure what to include in reports
+Initialize-HardeningValidator -OutputPath "C:\Reports" -IncludePassedChecks $true
+```
+
+##### Invoke-HardeningValidation
+
+Runs hardening validation checks against the system.
+
+```powershell
+# Run all built-in CIS benchmark checks
+$results = Invoke-HardeningValidation
+
+# Filter by category
+$results = Invoke-HardeningValidation -Categories @('Windows Firewall', 'Account Policies')
+
+# Filter by severity
+$results = Invoke-HardeningValidation -Severities @('Critical', 'High')
+
+# Run custom checks
+$results = Invoke-HardeningValidation -CustomChecks $myChecks
+```
+
+##### Get-HardeningReport
+
+Generates compliance reports from validation results.
+
+```powershell
+# Get report as object
+$report = Get-HardeningReport -Results $results -Format Object
+
+# Generate HTML report
+Get-HardeningReport -Results $results -Format HTML -OutputPath "C:\Reports\compliance.html"
+
+# Generate JSON report
+Get-HardeningReport -Results $results -Format JSON -OutputPath "C:\Reports\compliance.json"
+
+# Generate CSV report
+Get-HardeningReport -Results $results -Format CSV -OutputPath "C:\Reports\compliance.csv"
+```
+
+##### Individual Test Functions
+
+Test specific configuration types:
+
+```powershell
+# Test registry setting
+$result = Test-RegistrySetting -Path "HKLM:\SOFTWARE\...\System" `
+    -Name "EnableLUA" -ExpectedValue 1 -Operator "Equals"
+
+# Test service configuration
+$result = Test-ServiceConfiguration -ServiceName "RemoteRegistry" -ExpectedStartType "Disabled"
+
+# Test firewall profile
+$result = Test-FirewallProfile -ProfileName "Public" -ExpectedEnabled $true
+
+# Test local account
+$result = Test-LocalAccount -AccountName "Guest" -ExpectedEnabled $false
+
+# Test audit policy
+$result = Test-AuditPolicy -Subcategory "Credential Validation" `
+    -ExpectedValue "Success and Failure"
+
+# Test security policy
+$result = Test-SecurityPolicy -PolicyName "MinimumPasswordLength" `
+    -ExpectedValue 14 -Operator "GreaterOrEqual"
+```
+
+##### Export-HardeningBaseline
+
+Exports current system configuration as a baseline.
+
+```powershell
+Export-HardeningBaseline -OutputPath "C:\Baselines\server-baseline.json" -Format JSON
+```
+
+##### Import-CustomChecks
+
+Imports custom check definitions from a JSON file.
+
+```powershell
+$customChecks = Import-CustomChecks -FilePath "C:\Checks\custom-checks.json"
+$results = Invoke-HardeningValidation -CustomChecks $customChecks
+```
+
+##### Get-BuiltInChecks
+
+Returns the built-in CIS benchmark checks for reference.
+
+```powershell
+# Get all built-in checks
+$checks = Get-BuiltInChecks
+
+# Get checks for specific category
+$fwChecks = Get-BuiltInChecks -Category "Windows Firewall"
+```
+
+#### Built-in Check Categories
+
+The module includes built-in checks for:
+
+1. **Account Policies** - Password policy, account lockout settings
+2. **Local Policies** - Security options, user rights
+3. **Windows Firewall** - Domain, Private, and Public profiles
+4. **System Services** - Service startup types and states
+5. **Administrative Templates** - Registry-based policy settings
+6. **Advanced Audit Policy** - Audit subcategory configurations
+
+#### Usage Examples
+
+##### Example 1: Basic Compliance Check
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+# Run all checks
+$results = Invoke-HardeningValidation
+
+# Display summary
+$passed = ($results | Where-Object { $_.Status -eq 'Pass' }).Count
+$failed = ($results | Where-Object { $_.Status -eq 'Fail' }).Count
+Write-Host "Passed: $passed, Failed: $failed"
+```
+
+##### Example 2: Generate HTML Compliance Report
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+# Initialize with output path
+Initialize-HardeningValidator -OutputPath "C:\Reports" -BenchmarkVersion "CIS Windows Server 2019 v1.0.0"
+
+# Run validation
+$results = Invoke-HardeningValidation
+
+# Generate HTML report
+$report = Get-HardeningReport -Results $results -Format HTML `
+    -OutputPath "C:\Reports\compliance-report.html"
+
+Write-Host "Compliance Score: $($report.Summary.ComplianceScore)%"
+```
+
+##### Example 3: Check Critical and High Severity Items Only
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+# Run only critical and high severity checks
+$results = Invoke-HardeningValidation -Severities @('Critical', 'High')
+
+# Show failed items
+$results | Where-Object { $_.Status -eq 'Fail' } | ForEach-Object {
+    Write-Host "[$($_.Severity)] $($_.Name)" -ForegroundColor Red
+    Write-Host "  Remediation: $($_.Remediation)" -ForegroundColor Yellow
+}
+```
+
+##### Example 4: Custom Check Definition
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+# Define custom checks
+$customChecks = @(
+    @{
+        Id = 'CUSTOM-001'
+        Category = 'Custom Checks'
+        SubCategory = 'Organization Policy'
+        Name = 'PowerShell Execution Policy'
+        Description = 'Verify PowerShell execution policy is configured'
+        CheckType = 'Registry'
+        RegistryPath = 'HKLM:\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell'
+        RegistryName = 'ExecutionPolicy'
+        ExpectedValue = 'RemoteSigned'
+        Operator = 'Equals'
+        Severity = 'Medium'
+        Remediation = 'Set PowerShell execution policy to RemoteSigned'
+        Reference = 'Organization Security Policy'
+    }
+)
+
+# Run custom checks
+$results = Invoke-HardeningValidation -CustomChecks $customChecks
+```
+
+##### Example 5: Focus on Windows Firewall
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+# Check only firewall settings
+$results = Invoke-HardeningValidation -Categories @('Windows Firewall')
+
+foreach ($result in $results) {
+    $color = if ($result.Status -eq 'Pass') { 'Green' } else { 'Red' }
+    Write-Host "[$($result.Status)] $($result.Name)" -ForegroundColor $color
+}
+```
+
+##### Example 6: Export Baseline for Comparison
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+# Export current configuration as baseline
+Export-HardeningBaseline -OutputPath "C:\Baselines\$(hostname)-baseline.json" -Format JSON
+
+# Later, compare against baseline or use for documentation
+```
+
+##### Example 7: Analyze Report Object
+
+```powershell
+Import-Module ".\Modules\HardeningValidator.psm1"
+
+$results = Invoke-HardeningValidation
+$report = Get-HardeningReport -Results $results -Format Object
+
+# Display detailed summary
+Write-Host "Computer: $($report.Summary.ComputerName)"
+Write-Host "Compliance Score: $($report.Summary.ComplianceScore)%"
+Write-Host "Total Checks: $($report.Summary.TotalChecks)"
+Write-Host "Passed: $($report.Summary.Passed)"
+Write-Host "Failed: $($report.Summary.Failed)"
+
+# Show failures by severity
+if ($report.SeverityBreakdown) {
+    Write-Host "`nFailures by Severity:"
+    $report.SeverityBreakdown | ForEach-Object {
+        Write-Host "  $($_.Severity): $($_.Count)"
+    }
+}
+```
+
+#### Custom Check JSON Format
+
+Create custom checks in JSON format for import:
+
+```json
+[
+    {
+        "Id": "ORG-001",
+        "Category": "Organization Policy",
+        "SubCategory": "Network Security",
+        "Name": "Check Custom Setting",
+        "Description": "Verify custom organization setting",
+        "CheckType": "Registry",
+        "RegistryPath": "HKLM:\\SOFTWARE\\MyOrg\\Settings",
+        "RegistryName": "SecurityEnabled",
+        "ExpectedValue": 1,
+        "Operator": "Equals",
+        "Severity": "High",
+        "Remediation": "Enable security setting in registry",
+        "Reference": "Organization Security Policy v1.0"
+    }
+]
+```
+
+#### Check Types
+
+| CheckType | Description | Required Parameters |
+|-----------|-------------|---------------------|
+| Registry | Check registry values | RegistryPath, RegistryName, ExpectedValue, Operator |
+| Service | Check service configuration | ServiceName, ExpectedStartType |
+| FirewallProfile | Check firewall profile state | ProfileName, ExpectedEnabled |
+| LocalAccount | Check local account status | AccountName, ExpectedEnabled |
+| AuditPolicy | Check audit policy settings | AuditSubcategory, ExpectedValue |
+| SecurityPolicy | Check security policy settings | PolicyName, ExpectedValue, Operator |
+
+#### Operators
+
+For Registry and SecurityPolicy checks:
+- `Equals` - Value must equal expected
+- `NotEquals` - Value must not equal expected
+- `GreaterThan` - Value must be greater than expected
+- `LessThan` - Value must be less than expected
+- `GreaterOrEqual` - Value must be greater than or equal
+- `LessOrEqual` - Value must be less than or equal
+- `Contains` - Value must contain expected string
+
+#### Severity Levels
+
+- **Critical** - Immediate security risk
+- **High** - Significant security concern
+- **Medium** - Moderate security impact
+- **Low** - Minor security consideration
+- **Info** - Informational only
+
+#### Installation
+
+1. Copy `HardeningValidator.psm1` to your modules directory
+2. Import the module (requires Administrator for most checks):
+   ```powershell
+   Import-Module ".\Modules\HardeningValidator.psm1"
+   ```
+
+#### Testing
+
+Run the example script (as Administrator):
+
+```powershell
+.\Examples\HardeningValidator-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Security Audits**: Validate systems against CIS benchmarks
+- **Compliance Reporting**: Generate compliance reports for auditors
+- **Baseline Comparison**: Compare system configurations over time
+- **Deployment Validation**: Verify hardening after system deployment
+- **Continuous Monitoring**: Regular compliance checks as part of security operations
+- **Custom Policies**: Implement organization-specific security checks
+
+#### Troubleshooting
+
+**"Access Denied" Errors**
+- Run PowerShell as Administrator
+- Some checks require elevated privileges
+
+**"Registry path not found" Messages**
+- The setting may not exist on this Windows version
+- Status will be marked as "Fail" or "Not Applicable"
+
+**Slow Performance**
+- Filter by category or severity to reduce checks
+- Security policy export can take a few seconds
+
+#### Security Considerations
+
+- Always run as Administrator for accurate results
+- Keep custom check definitions secure
+- Review baseline exports before sharing (may contain sensitive paths)
+- Schedule regular compliance checks
+- Document any accepted risks for failed checks
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
