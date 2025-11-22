@@ -1707,6 +1707,203 @@ Run the example script:
 
 ---
 
+### StringEncryption
+
+A comprehensive module for string and file encryption, decryption, and security operations.
+
+#### Features
+
+- **AES Encryption**: 128/192/256-bit AES encryption for strings and files
+- **DPAPI Support**: Windows Data Protection API for user/machine-bound encryption
+- **SecureString Handling**: Convert between SecureString and encrypted strings
+- **Key Management**: Generate, export, import encryption keys
+- **Hashing**: SHA256, SHA384, SHA512, MD5, SHA1 hash generation
+- **Password Generation**: Cryptographically secure random passwords
+- **File Encryption**: Encrypt and decrypt entire files
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Functions
+
+##### Key Management
+
+```powershell
+# Generate a new key
+$key = New-EncryptionKey -KeySize 256
+$keyBase64 = New-EncryptionKey -KeySize 256 -AsBase64
+
+# Export key to file
+Export-EncryptionKey -Key $key -FilePath "C:\Keys\app.key"
+Export-EncryptionKey -Key $key -FilePath "C:\Keys\app.key" -ProtectWithDPAPI
+
+# Import key from file
+$key = Import-EncryptionKey -FilePath "C:\Keys\app.key"
+$key = Import-EncryptionKey -FilePath "C:\Keys\app.key" -ProtectedWithDPAPI
+```
+
+##### AES String Encryption
+
+```powershell
+# Encrypt a string
+$encrypted = Protect-String -PlainText "Secret message" -Key $key
+
+# Decrypt a string
+$plainText = Unprotect-String -EncryptedText $encrypted -Key $key
+
+# Pipeline support
+$secrets = @("Secret1", "Secret2") | Protect-String -Key $key
+```
+
+##### DPAPI Encryption
+
+```powershell
+# Encrypt with DPAPI (user/machine bound)
+$encrypted = Protect-StringWithDPAPI -PlainText "Secret" -Scope CurrentUser
+
+# Decrypt
+$plainText = Unprotect-StringWithDPAPI -EncryptedText $encrypted
+```
+
+##### SecureString Operations
+
+```powershell
+# Create SecureString from text
+$secure = New-SecureStringFromPlainText -PlainText "Password"
+
+# Convert to encrypted string (portable)
+$encrypted = ConvertTo-EncryptedString -SecureString $secure -Key $key
+
+# Convert back to SecureString
+$secure = ConvertFrom-EncryptedString -EncryptedString $encrypted -Key $key
+
+# Get plain text from SecureString
+$plainText = Get-PlainTextFromSecureString -SecureString $secure
+```
+
+##### Hashing
+
+```powershell
+# Generate hash
+$hash = Get-StringHash -InputString "Hello World" -Algorithm SHA256
+
+# Verify hash
+$isValid = Test-StringHash -InputString "Hello World" -Hash $hash
+```
+
+##### Password Generation
+
+```powershell
+# Generate random password
+$password = New-RandomPassword -Length 16
+
+# With special characters
+$password = New-RandomPassword -Length 20 -IncludeSpecial
+
+# Exclude ambiguous characters (0, O, l, 1, I)
+$password = New-RandomPassword -Length 16 -ExcludeAmbiguous
+
+# As SecureString
+$secure = New-RandomPassword -AsSecureString
+```
+
+##### File Encryption
+
+```powershell
+# Encrypt a file
+Protect-File -FilePath "C:\data.txt" -Key $key -OutputPath "C:\data.enc"
+
+# Decrypt a file
+Unprotect-File -FilePath "C:\data.enc" -Key $key -OutputPath "C:\data.txt"
+
+# Delete original after encryption
+Protect-File -FilePath "C:\data.txt" -Key $key -DeleteOriginal
+```
+
+##### Utility Functions
+
+```powershell
+# Test if data appears encrypted
+if (Test-EncryptedString -InputString $data) {
+    Write-Host "Data is encrypted"
+}
+```
+
+#### Usage Example
+
+```powershell
+Import-Module ".\Modules\StringEncryption.psm1"
+
+# Generate and save encryption key
+$key = New-EncryptionKey -KeySize 256
+Export-EncryptionKey -Key $key -FilePath "C:\Keys\app.key" -ProtectWithDPAPI
+
+# Encrypt sensitive data
+$apiKey = "sk-1234567890abcdef"
+$encrypted = Protect-String -PlainText $apiKey -Key $key
+
+# Store encrypted value in config
+@{
+    ApiKey = $encrypted
+    Endpoint = "https://api.example.com"
+} | ConvertTo-Json | Set-Content "config.json"
+
+# Later, retrieve and decrypt
+$key = Import-EncryptionKey -FilePath "C:\Keys\app.key" -ProtectedWithDPAPI
+$config = Get-Content "config.json" | ConvertFrom-Json
+$apiKey = Unprotect-String -EncryptedText $config.ApiKey -Key $key
+```
+
+#### Password Storage Example
+
+```powershell
+Import-Module ".\Modules\StringEncryption.psm1"
+
+# Registration - store hash only
+$password = "UserPassword123!"
+$hash = Get-StringHash -InputString $password -Algorithm SHA256
+
+# Login - verify against hash
+$loginAttempt = Read-Host "Enter password"
+if (Test-StringHash -InputString $loginAttempt -Hash $hash) {
+    Write-Host "Login successful"
+}
+```
+
+#### Installation
+
+1. Copy `StringEncryption.psm1` to your modules directory
+2. Import the module:
+   ```powershell
+   Import-Module ".\Modules\StringEncryption.psm1"
+   ```
+
+#### Testing
+
+Run the example script:
+
+```powershell
+.\Examples\StringEncryption-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Credential Storage**: Securely store API keys and passwords
+- **Configuration Files**: Encrypt sensitive config values
+- **File Protection**: Encrypt sensitive documents
+- **Password Management**: Generate and verify passwords
+- **Data Integrity**: Hash data for verification
+- **Secure Communication**: Encrypt data before transmission
+
+#### Security Best Practices
+
+- Use 256-bit keys for AES encryption
+- Store keys separately from encrypted data
+- Use DPAPI for keys that don't need to be portable
+- Hash passwords instead of encrypting them
+- Rotate encryption keys periodically
+- Never log or display decrypted sensitive data
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
