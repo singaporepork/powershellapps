@@ -1500,6 +1500,213 @@ For detailed documentation, see `Modules/SCHEDULEDTASK_GUIDE.md`
 
 ---
 
+### Logger
+
+A comprehensive logging module with multiple output targets and log levels.
+
+#### Features
+
+- **Multiple Log Levels**: DEBUG, INFO, WARNING, ERROR, CRITICAL
+- **Multiple Outputs**: Console, file, or both
+- **Log Rotation**: Automatic rotation based on file size
+- **Colored Output**: Color-coded console messages
+- **Exception Logging**: Include exception details in logs
+- **Operation Tracking**: Track start/completion of operations
+- **Thread-Safe**: Safe for concurrent file access
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Functions
+
+##### Initialize-Logger
+
+Sets up logging configuration.
+
+```powershell
+# Console only
+Initialize-Logger -LogLevel INFO -LogToConsole $true
+
+# File and console
+Initialize-Logger -LogPath "C:\Logs\app.log" `
+    -LogLevel DEBUG `
+    -LogToConsole $true `
+    -LogToFile $true `
+    -MaxFileSizeMB 10 `
+    -MaxLogFiles 5
+```
+
+##### Log Level Functions
+
+```powershell
+Write-LogDebug "Debug information"
+Write-LogInfo "Application started"
+Write-LogWarning "Configuration missing, using defaults"
+Write-LogError "Failed to connect to database"
+Write-LogCritical "System failure - shutting down"
+```
+
+##### Write-LogMessage
+
+Core function with full control.
+
+```powershell
+Write-LogMessage -Message "Custom message" -Level WARNING
+
+# With exception
+try { ... } catch {
+    Write-LogMessage -Message "Operation failed" -Level ERROR -Exception $_.Exception
+}
+```
+
+##### Write-LogError with Exception
+
+```powershell
+try {
+    Get-Content "missing.txt" -ErrorAction Stop
+}
+catch {
+    Write-LogError "File read failed" -Exception $_.Exception
+}
+```
+
+##### Operation Tracking
+
+```powershell
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+
+Start-LogOperation "Database Backup"
+
+# ... perform backup ...
+
+$stopwatch.Stop()
+Complete-LogOperation "Database Backup" -Success $true -Duration $stopwatch.Elapsed
+```
+
+##### Headers and Separators
+
+```powershell
+Write-LogHeader "Application Startup"
+Write-LogSeparator
+Write-LogSeparator -Character "=" -Length 80
+```
+
+##### Log Object Properties
+
+```powershell
+$config = @{ Server = "localhost"; Port = 8080 }
+Write-LogObject -InputObject $config -Name "Configuration"
+```
+
+##### Read Log Entries
+
+```powershell
+# Get last 50 entries
+Get-LogEntries -Last 50
+
+# Get errors only
+Get-LogEntries -Level ERROR
+
+# Get entries since time
+Get-LogEntries -Since (Get-Date).AddHours(-1)
+
+# Get as objects
+Get-LogEntries -AsObject | Where-Object { $_.Level -eq 'ERROR' }
+```
+
+##### Log File Management
+
+```powershell
+# Get current log path
+$path = Get-LogFilePath
+
+# Get file size info
+$size = Get-LogFileSize
+Write-Host "Size: $($size.SizeMB) MB ($($size.PercentUsed)% of max)"
+
+# Rotate logs manually
+Invoke-LogRotation
+
+# Clear log file
+Clear-LogFile
+Clear-LogFile -Archive  # Archive before clearing
+```
+
+##### Dynamic Log Level
+
+```powershell
+# Change level at runtime
+Set-LogLevel -Level DEBUG
+
+# Get current config
+$config = Get-LoggerConfig
+```
+
+#### Usage Example
+
+```powershell
+Import-Module ".\Modules\Logger.psm1"
+
+# Initialize
+Initialize-Logger -LogPath "C:\Logs\myapp.log" `
+    -LogLevel INFO `
+    -LogToConsole $true `
+    -LogToFile $true
+
+# Application logging
+Write-LogHeader "Application Started"
+
+$config = @{ Environment = "Production"; Version = "2.0" }
+Write-LogObject -InputObject $config -Name "Config"
+
+Start-LogOperation "Data Processing"
+try {
+    Write-LogInfo "Processing records..."
+    # ... process data ...
+    Complete-LogOperation "Data Processing" -Success $true
+}
+catch {
+    Write-LogError "Processing failed" -Exception $_.Exception
+    Complete-LogOperation "Data Processing" -Success $false
+}
+
+Write-LogHeader "Application Shutdown"
+```
+
+#### Log Output Format
+
+Default format: `[timestamp] [level] message`
+
+```
+[2024-01-15 10:30:45] [INFO    ] Application started
+[2024-01-15 10:30:46] [WARNING ] Configuration not found
+[2024-01-15 10:30:47] [ERROR   ] Connection failed
+```
+
+#### Installation
+
+1. Copy `Logger.psm1` to your modules directory
+2. Import the module:
+   ```powershell
+   Import-Module ".\Modules\Logger.psm1"
+   ```
+
+#### Testing
+
+Run the example script:
+
+```powershell
+.\Examples\Logger-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Application Logging**: Track application events and errors
+- **Script Debugging**: Enable DEBUG level during development
+- **Audit Trails**: Log important operations to file
+- **Error Tracking**: Capture exceptions with stack traces
+- **Performance Monitoring**: Track operation durations
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
