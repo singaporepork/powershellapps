@@ -2937,6 +2937,363 @@ Run the example script (as Administrator):
 
 ---
 
+### XmlFormatter
+
+A comprehensive module for transforming XML files into human-readable format with proper indentation and formatting.
+
+#### Features
+
+- **XML Formatting**: Convert compact XML to readable format with proper indentation
+- **Multiple Input Sources**: Format from files or strings
+- **Custom Indentation**: Configure indent characters (spaces, tabs)
+- **XML Validation**: Test if files/strings contain valid XML
+- **XML Information**: Get document metadata and structure info
+- **XML Comparison**: Compare two XML documents for differences
+- **Minification**: Compress XML by removing whitespace
+- **Element Extraction**: Extract specific elements using XPath
+- **Export**: Save formatted XML to files with encoding options
+- **Pipeline Support**: Full integration with PowerShell pipeline
+- **PowerShell 5 Compatible**: Works with PowerShell 5.0 and later
+
+#### Functions
+
+##### Format-XmlString
+
+Formats an XML string into human-readable format.
+
+```powershell
+# Basic formatting
+$compact = '<root><child>value</child></root>'
+$formatted = Format-XmlString -XmlString $compact
+
+# With tab indentation
+$formatted = Format-XmlString -XmlString $compact -IndentChars "`t"
+
+# Without XML declaration
+$formatted = Format-XmlString -XmlString $compact -OmitXmlDeclaration
+```
+
+##### Format-XmlFile
+
+Formats an XML file into human-readable format.
+
+```powershell
+# Format a file
+$formatted = Format-XmlFile -FilePath "C:\config.xml"
+
+# With custom indentation
+$formatted = Format-XmlFile -FilePath "C:\config.xml" -IndentChars "    "
+```
+
+##### Test-XmlFile
+
+Tests if a file or string contains valid XML.
+
+```powershell
+# Simple validation
+if (Test-XmlFile -FilePath "C:\config.xml") {
+    Write-Host "Valid XML"
+}
+
+# Detailed validation result
+$result = Test-XmlFile -XmlString $xml -Detailed
+if (-not $result.IsValid) {
+    Write-Host "Error at line $($result.ErrorLine): $($result.ErrorMessage)"
+}
+```
+
+##### Export-FormattedXml
+
+Exports formatted XML to a file.
+
+```powershell
+# Format and export
+Export-FormattedXml -InputPath "C:\compact.xml" -OutputPath "C:\formatted.xml"
+
+# Export with options
+Export-FormattedXml -InputPath "C:\config.xml" `
+    -OutputPath "C:\config-formatted.xml" `
+    -IndentChars "`t" `
+    -Encoding UTF8 `
+    -Force
+```
+
+##### Get-XmlInfo
+
+Gets information about an XML document.
+
+```powershell
+$info = Get-XmlInfo -FilePath "C:\config.xml"
+
+Write-Host "Root element: $($info.RootElement)"
+Write-Host "Total elements: $($info.ElementCount)"
+Write-Host "Max depth: $($info.MaxDepth)"
+Write-Host "Has namespaces: $($info.HasNamespaces)"
+```
+
+##### ConvertTo-PrettyXml
+
+Converts an XmlDocument object to a formatted string.
+
+```powershell
+# Load and format
+$xmlDoc = [xml](Get-Content "C:\config.xml")
+$formatted = ConvertTo-PrettyXml -XmlDocument $xmlDoc
+```
+
+##### Compress-XmlString
+
+Minifies XML by removing whitespace.
+
+```powershell
+# Minify formatted XML
+$minified = Compress-XmlString -XmlString $formattedXml
+
+# Minify from file
+$minified = Compress-XmlString -FilePath "C:\formatted.xml"
+```
+
+##### Get-FormattedXmlElement
+
+Extracts and formats a specific element using XPath.
+
+```powershell
+# Extract database section
+$element = Get-FormattedXmlElement -FilePath "C:\config.xml" -XPath "//database"
+
+# Extract with attribute filter
+$element = Get-FormattedXmlElement -XmlString $xml -XPath "/root/item[@id='1']"
+```
+
+##### Compare-XmlDocuments
+
+Compares two XML documents and shows differences.
+
+```powershell
+# Compare files
+$diff = Compare-XmlDocuments -ReferencePath "C:\original.xml" -DifferencePath "C:\modified.xml"
+
+if (-not $diff.AreEqual) {
+    Write-Host "Found $($diff.DifferenceCount) differences"
+    $diff.Differences | Format-Table
+}
+```
+
+#### Usage Examples
+
+##### Example 1: Format Configuration File
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+# Read and format configuration
+$formatted = Format-XmlFile -FilePath "C:\app\web.config"
+
+# Display formatted XML
+Write-Host $formatted
+```
+
+##### Example 2: Validate and Format
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+$xmlFile = "C:\data\import.xml"
+
+# Validate first
+$validation = Test-XmlFile -FilePath $xmlFile -Detailed
+if ($validation.IsValid) {
+    # Format and save
+    Export-FormattedXml -InputPath $xmlFile `
+        -OutputPath "C:\data\import-formatted.xml" `
+        -Force
+
+    Write-Host "File formatted successfully"
+}
+else {
+    Write-Host "Invalid XML: $($validation.ErrorMessage)" -ForegroundColor Red
+}
+```
+
+##### Example 3: Analyze XML Structure
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+# Get XML information
+$info = Get-XmlInfo -FilePath "C:\data\large-file.xml"
+
+Write-Host "XML Document Analysis:"
+Write-Host "  Root Element: $($info.RootElement)"
+Write-Host "  Total Elements: $($info.ElementCount)"
+Write-Host "  Unique Elements: $($info.UniqueElementCount)"
+Write-Host "  Max Depth: $($info.MaxDepth)"
+Write-Host "  File Size: $($info.FileSize) bytes"
+
+if ($info.HasNamespaces) {
+    Write-Host "  Namespaces:"
+    foreach ($ns in $info.Namespaces) {
+        Write-Host "    $($ns.Prefix): $($ns.Uri)"
+    }
+}
+```
+
+##### Example 4: Extract and Format Specific Section
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+# Extract just the database configuration
+$dbConfig = Get-FormattedXmlElement -FilePath "C:\app\config.xml" -XPath "//connectionStrings"
+
+Write-Host "Database Configuration:"
+Write-Host $dbConfig
+```
+
+##### Example 5: Compare Configuration Versions
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+# Compare before and after configs
+$comparison = Compare-XmlDocuments `
+    -ReferencePath "C:\backup\web.config" `
+    -DifferencePath "C:\app\web.config"
+
+if ($comparison.AreEqual) {
+    Write-Host "Configurations are identical" -ForegroundColor Green
+}
+else {
+    Write-Host "Found $($comparison.DifferenceCount) differences:" -ForegroundColor Yellow
+
+    foreach ($diff in $comparison.Differences) {
+        Write-Host "  $($diff.Path): $($diff.Type)" -ForegroundColor Cyan
+        Write-Host "    Old: $($diff.Reference)"
+        Write-Host "    New: $($diff.Difference)"
+    }
+}
+```
+
+##### Example 6: Batch Format XML Files
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+$inputFolder = "C:\xml-files"
+$outputFolder = "C:\xml-formatted"
+
+# Create output folder
+New-Item -ItemType Directory -Path $outputFolder -Force | Out-Null
+
+# Process all XML files
+Get-ChildItem -Path $inputFolder -Filter "*.xml" | ForEach-Object {
+    $outputPath = Join-Path $outputFolder $_.Name
+
+    Write-Host "Formatting: $($_.Name)..."
+
+    # Validate first
+    if (Test-XmlFile -FilePath $_.FullName) {
+        Export-FormattedXml -InputPath $_.FullName `
+            -OutputPath $outputPath `
+            -Force
+
+        Write-Host "  Saved to: $outputPath" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  Invalid XML - skipped" -ForegroundColor Red
+    }
+}
+
+Write-Host "Batch formatting complete!"
+```
+
+##### Example 7: Create and Format XML Programmatically
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+# Create XML document
+$xmlDoc = New-Object System.Xml.XmlDocument
+$root = $xmlDoc.CreateElement("configuration")
+$xmlDoc.AppendChild($root) | Out-Null
+
+# Add settings
+$settings = $xmlDoc.CreateElement("appSettings")
+$root.AppendChild($settings) | Out-Null
+
+@{
+    "ServerName" = "localhost"
+    "Port" = "8080"
+    "Environment" = "Development"
+}.GetEnumerator() | ForEach-Object {
+    $add = $xmlDoc.CreateElement("add")
+    $add.SetAttribute("key", $_.Key)
+    $add.SetAttribute("value", $_.Value)
+    $settings.AppendChild($add) | Out-Null
+}
+
+# Convert to formatted string
+$formatted = ConvertTo-PrettyXml -XmlDocument $xmlDoc
+Write-Host $formatted
+```
+
+##### Example 8: Minify XML for Transmission
+
+```powershell
+Import-Module ".\Modules\XmlFormatter.psm1"
+
+# Read formatted XML
+$formatted = Get-Content "C:\config\settings.xml" -Raw
+
+# Minify for API call or storage
+$minified = Compress-XmlString -XmlString $formatted
+
+# Size comparison
+$originalSize = $formatted.Length
+$minifiedSize = $minified.Length
+$savings = [Math]::Round((1 - ($minifiedSize / $originalSize)) * 100, 1)
+
+Write-Host "Original size: $originalSize characters"
+Write-Host "Minified size: $minifiedSize characters"
+Write-Host "Space saved: $savings%"
+```
+
+#### Installation
+
+1. Copy the `XmlFormatter.psm1` file to your PowerShell modules directory or project
+2. Import the module in your script:
+   ```powershell
+   Import-Module ".\Modules\XmlFormatter.psm1"
+   ```
+
+#### Testing
+
+Run the example script to see all features in action:
+
+```powershell
+.\Examples\XmlFormatter-Examples.ps1
+```
+
+#### Common Use Cases
+
+- **Configuration Management**: Format and compare config files
+- **API Development**: Format XML responses for debugging
+- **Data Processing**: Validate and transform XML data files
+- **Documentation**: Extract and format XML snippets
+- **Build Automation**: Format XML build files and manifests
+- **Log Analysis**: Format XML log entries for readability
+- **Migration**: Convert between compact and formatted XML
+
+#### Tips
+
+- Use `-OmitXmlDeclaration` when embedding XML in other documents
+- Use `Test-XmlFile -Detailed` for better error diagnostics
+- Use `Get-XmlInfo` before processing large files to understand structure
+- Use `Compress-XmlString` to reduce file size for storage/transmission
+- Use `Compare-XmlDocuments` before deploying configuration changes
+
+---
+
 ## Getting Started
 
 1. Clone or download this repository
